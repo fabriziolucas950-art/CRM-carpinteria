@@ -150,7 +150,7 @@
         // --- Modules ---
 
 
-        const ClientManager = ({ clients, setClients, userId }) => {
+        const ClientManager = ({ clients, setClients, tenantId }) => {
             const [newClient, setNewClient] = useState({ name: '', phone: '', address: '' });
             const [isLoading, setIsLoading] = useState(false);
 
@@ -187,7 +187,7 @@
                         .from('clientes')
                         .insert([
                             {
-                                user_id: userId,
+                                tenant_id: tenantId,
                                 name: newClient.name,
                                 phone: newClient.phone,
                                 address: newClient.address
@@ -367,7 +367,7 @@
             );
         };
 
-        const Quoter = ({ clients, setClients, userId }) => {
+        const Quoter = ({ clients, setClients, tenantId }) => {
             const [selectedClient, setSelectedClient] = useState(null);
             const [items, setItems] = useState([{ id: 1, desc: '', qty: 1, price: 0 }]);
 
@@ -530,7 +530,7 @@
                         .from('presupuestos')
                         .insert([
                             {
-                                user_id: userId,
+                                tenant_id: tenantId,
                                 client_id: selectedClient.id,
                                 date: new Date().toISOString(), // Usar ISO para la DB
                                 summary: summary,
@@ -645,7 +645,7 @@
             );
         };
 
-        const PriceList = ({ prices, setPrices, userId }) => {
+        const PriceList = ({ prices, setPrices, tenantId }) => {
             const [localPrices, setLocalPrices] = useState(prices);
             const [searchQuery, setSearchQuery] = useState('');
             const [isLoading, setIsLoading] = useState(false);
@@ -682,7 +682,7 @@
                         .from('precios')
                         .insert([
                             {
-                                user_id: userId,
+                                tenant_id: tenantId,
                                 category: 'Materia Prima',
                                 description: '',
                                 price: 0
@@ -855,7 +855,7 @@
             );
         };
 
-        const SupplierManager = ({ suppliers, setSuppliers, userId }) => {
+        const SupplierManager = ({ suppliers, setSuppliers, tenantId }) => {
             const [newSupplier, setNewSupplier] = useState({ name: '', phone: '', supplies: '' });
             const [isLoading, setIsLoading] = useState(false);
 
@@ -889,7 +889,7 @@
                         .from('proveedores')
                         .insert([
                             {
-                                user_id: userId,
+                                tenant_id: tenantId,
                                 name: newSupplier.name,
                                 phone: newSupplier.phone,
                                 supplies: newSupplier.supplies
@@ -1156,6 +1156,7 @@
         // --- Main App ---
         const App = () => {
             const [session, setSession] = useState(null);
+            const [tenantId, setTenantId] = useState(null);
             const [isCheckingSession, setIsCheckingSession] = useState(true);
 
             const [tab, setTab] = useState('clients');
@@ -1208,16 +1209,34 @@
                 // Estado al cargar por primera vez
                 window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
-                    setIsCheckingSession(false);
+                    if (!session) setIsCheckingSession(false);
+                    else fetchTenantId(session.user.id);
                 });
 
                 // Escuchar cambios (login, logout, token refresh)
                 const { data: { subscription } } = window.supabaseClient.auth.onAuthStateChange((_event, session) => {
                     setSession(session);
+                    if (session) fetchTenantId(session.user.id);
                 });
 
                 return () => subscription?.unsubscribe();
             }, []);
+
+            const fetchTenantId = async (uid) => {
+                try {
+                    const { data, error } = await window.supabaseClient.from('usuarios').select('tenant_id').eq('id', uid).single();
+                    if (data && data.tenant_id !== undefined && data.tenant_id !== null) {
+                        setTenantId(data.tenant_id);
+                        setIsCheckingSession(false);
+                    } else {
+                        setTimeout(async () => {
+                            const { data: retryData } = await window.supabaseClient.from('usuarios').select('tenant_id').eq('id', uid).single();
+                            if (retryData) setTenantId(retryData.tenant_id);
+                            setIsCheckingSession(false);
+                        }, 1000);
+                    }
+                } catch (e) { console.error(e); setIsCheckingSession(false); }
+            };
 
             const handleLogout = async () => {
                 if (confirm('¿Seguro que deseas cerrar sesión?')) {
@@ -1231,6 +1250,10 @@
 
             if (!session) {
                 return <Login />;
+            }
+
+            if (tenantId === null) {
+                return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-400">Generando Tenant ID de empresa...</div>;
             }
 
             return (
@@ -1262,10 +1285,10 @@
                             </div>
                         </div>
 
-                        {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} userId={session.user.id} />}
-                        {tab === 'quoter' && <Quoter clients={clients} setClients={setClients} userId={session.user.id} />}
-                        {tab === 'prices' && <PriceList prices={prices} setPrices={setPrices} userId={session.user.id} />}
-                        {tab === 'suppliers' && <SupplierManager suppliers={suppliers} setSuppliers={setSuppliers} userId={session.user.id} />}
+                        {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} tenantId={tenantId} />}
+                        {tab === 'quoter' && <Quoter clients={clients} setClients={setClients} tenantId={tenantId} />}
+                        {tab === 'prices' && <PriceList prices={prices} setPrices={setPrices} tenantId={tenantId} />}
+                        {tab === 'suppliers' && <SupplierManager suppliers={suppliers} setSuppliers={setSuppliers} tenantId={tenantId} />}
 
                     </main>
                 </div>
