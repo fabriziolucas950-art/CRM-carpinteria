@@ -89,7 +89,7 @@
         };
 
         // --- Layout Components ---
-        const Sidebar = ({ currentTab, setTab, isOpen, setIsOpen }) => (
+        const Sidebar = ({ currentTab, setTab, isOpen, setIsOpen, onLogout }) => (
             <>
                 {/* Backdrop for mobile */}
                 {isOpen && (
@@ -130,7 +130,7 @@
                     </nav>
 
                     <div className="mt-auto border-t border-slate-700 pt-4">
-                        <button onClick={() => alert('Logout')} className="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg text-red-400">
+                        <button onClick={onLogout} className="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
                             <Icon name="log-out" /> Salir
                         </button>
                     </div>
@@ -1031,8 +1031,85 @@
             );
         };
 
+        // --- Login Component ---
+        const Login = ({ onLogin }) => {
+            const [user, setUser] = useState('');
+            const [pass, setPass] = useState('');
+            const [error, setError] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                // Credenciales por defecto
+                if (user.toLowerCase() === 'admin' && pass === 'admin123') {
+                    onLogin();
+                } else {
+                    setError('Usuario o contraseña incorrectos');
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+                    <div className="glass p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-700">
+                        <div className="text-center mb-8">
+                            <div className="bg-blue-600/20 p-4 rounded-full inline-flex mb-4 border border-blue-500/30">
+                                <Icon name="lock" size={32} className="text-blue-400" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-white tracking-tight">Iniciar Sesión</h2>
+                            <p className="text-slate-400 text-sm mt-2">Ingresa las credenciales para acceder</p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            {error && (
+                                <div className="bg-red-500/10 text-red-400 p-3 rounded-lg text-sm text-center border border-red-500/20 flex items-center justify-center gap-2">
+                                    <Icon name="alert-circle" size={16} /> {error}
+                                </div>
+                            )}
+                            <div>
+                                <label className="text-[10px] uppercase text-slate-400 block mb-1.5 font-bold tracking-wider">Usuario</label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                        <Icon name="user" size={18} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={user}
+                                        onChange={(e) => setUser(e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 p-3 focus:ring-2 focus:border-transparent ring-blue-500 outline-none text-white transition-all text-sm"
+                                        placeholder="admin"
+                                        autoComplete="username"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] uppercase text-slate-400 block mb-1.5 font-bold tracking-wider">Contraseña</label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                        <Icon name="key" size={18} />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        value={pass}
+                                        onChange={(e) => setPass(e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 p-3 focus:ring-2 focus:border-transparent ring-blue-500 outline-none text-white transition-all text-sm"
+                                        placeholder="••••••••"
+                                        autoComplete="current-password"
+                                    />
+                                </div>
+                            </div>
+                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_25px_rgba(37,99,235,0.5)] flex items-center justify-center gap-2 mt-4">
+                                <Icon name="log-in" size={20} /> Entrar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
         // --- Main App ---
         const App = () => {
+            const [isAuthenticated, setIsAuthenticated] = useState(() => {
+                return localStorage.getItem('fabrizio_auth') === 'true';
+            });
             const [tab, setTab] = useState('clients');
             // Default open on desktop, closed on mobile
             const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
@@ -1066,9 +1143,25 @@
                 localStorage.setItem('fabrizio_suppliers', JSON.stringify(suppliers));
             }, [suppliers]);
 
+            const handleLogin = () => {
+                localStorage.setItem('fabrizio_auth', 'true');
+                setIsAuthenticated(true);
+            };
+
+            const handleLogout = () => {
+                if (confirm('¿Seguro que deseas cerrar sesión?')) {
+                    localStorage.removeItem('fabrizio_auth');
+                    setIsAuthenticated(false);
+                }
+            };
+
+            if (!isAuthenticated) {
+                return <Login onLogin={handleLogin} />;
+            }
+
             return (
                 <div className="flex bg-slate-900 min-h-screen relative overflow-x-hidden">
-                    <Sidebar currentTab={tab} setTab={setTab} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+                    <Sidebar currentTab={tab} setTab={setTab} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} />
 
                     <main className={`flex-grow transition-all duration-300 min-h-screen ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}>
                         {/* Persistent Header with Toggle */}
