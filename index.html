@@ -150,7 +150,7 @@
         // --- Modules ---
 
 
-        const ClientManager = ({ clients, setClients }) => {
+        const ClientManager = ({ clients, setClients, userId }) => {
             const [newClient, setNewClient] = useState({ name: '', phone: '', address: '' });
             const [isLoading, setIsLoading] = useState(false);
 
@@ -187,6 +187,7 @@
                         .from('clientes')
                         .insert([
                             {
+                                user_id: userId,
                                 name: newClient.name,
                                 phone: newClient.phone,
                                 address: newClient.address
@@ -366,7 +367,7 @@
             );
         };
 
-        const Quoter = ({ clients, setClients }) => {
+        const Quoter = ({ clients, setClients, userId }) => {
             const [selectedClient, setSelectedClient] = useState(null);
             const [items, setItems] = useState([{ id: 1, desc: '', qty: 1, price: 0 }]);
 
@@ -529,6 +530,7 @@
                         .from('presupuestos')
                         .insert([
                             {
+                                user_id: userId,
                                 client_id: selectedClient.id,
                                 date: new Date().toISOString(), // Usar ISO para la DB
                                 summary: summary,
@@ -643,7 +645,7 @@
             );
         };
 
-        const PriceList = ({ prices, setPrices }) => {
+        const PriceList = ({ prices, setPrices, userId }) => {
             const [localPrices, setLocalPrices] = useState(prices);
             const [searchQuery, setSearchQuery] = useState('');
             const [isLoading, setIsLoading] = useState(false);
@@ -680,6 +682,7 @@
                         .from('precios')
                         .insert([
                             {
+                                user_id: userId,
                                 category: 'Materia Prima',
                                 description: '',
                                 price: 0
@@ -852,7 +855,7 @@
             );
         };
 
-        const SupplierManager = ({ suppliers, setSuppliers }) => {
+        const SupplierManager = ({ suppliers, setSuppliers, userId }) => {
             const [newSupplier, setNewSupplier] = useState({ name: '', phone: '', supplies: '' });
             const [isLoading, setIsLoading] = useState(false);
 
@@ -886,6 +889,7 @@
                         .from('proveedores')
                         .insert([
                             {
+                                user_id: userId,
                                 name: newSupplier.name,
                                 phone: newSupplier.phone,
                                 supplies: newSupplier.supplies
@@ -1258,10 +1262,10 @@
                             </div>
                         </div>
 
-                        {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} />}
-                        {tab === 'quoter' && <Quoter clients={clients} setClients={setClients} />}
-                        {tab === 'prices' && <PriceList prices={prices} setPrices={setPrices} />}
-                        {tab === 'suppliers' && <SupplierManager suppliers={suppliers} setSuppliers={setSuppliers} />}
+                        {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} userId={session.user.id} />}
+                        {tab === 'quoter' && <Quoter clients={clients} setClients={setClients} userId={session.user.id} />}
+                        {tab === 'prices' && <PriceList prices={prices} setPrices={setPrices} userId={session.user.id} />}
+                        {tab === 'suppliers' && <SupplierManager suppliers={suppliers} setSuppliers={setSuppliers} userId={session.user.id} />}
 
                     </main>
                 </div>
