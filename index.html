@@ -1031,31 +1031,71 @@
             );
         };
 
-        // --- Login Component ---
-        const Login = ({ onLogin }) => {
-            const [user, setUser] = useState('');
+        // --- Login Component (Supabase Auth) ---
+        const Login = () => {
+            const [isLogin, setIsLogin] = useState(true);
+            const [email, setEmail] = useState('');
             const [pass, setPass] = useState('');
             const [error, setError] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [successMsg, setSuccessMsg] = useState('');
 
-            const handleSubmit = (e) => {
+            const handleSubmit = async (e) => {
                 e.preventDefault();
-                // Credenciales por defecto
-                if (user.toLowerCase() === 'admin' && pass === 'admin123') {
-                    onLogin();
-                } else {
-                    setError('Usuario o contraseña incorrectos');
+                setError('');
+                setSuccessMsg('');
+                setIsLoading(true);
+
+                try {
+                    if (isLogin) {
+                        // Iniciar Sesión
+                        const { data, error: authError } = await window.supabaseClient.auth.signInWithPassword({
+                            email: email,
+                            password: pass,
+                        });
+                        if (authError) throw authError;
+                        // App.js manejará el estado a través del onAuthStateChange
+                    } else {
+                        // Registro de nuevo usuario
+                        const { data, error: registerError } = await window.supabaseClient.auth.signUp({
+                            email: email,
+                            password: pass,
+                        });
+                        if (registerError) throw registerError;
+
+                        setSuccessMsg('¡Registro exitoso! Ya puedes iniciar sesión.');
+                        setIsLogin(true);
+                        setPass('');
+                    }
+                } catch (error) {
+                    // Traducción básica de errores comunes
+                    let msg = error.message;
+                    if (msg.includes("Invalid login credentials")) msg = "Credenciales incorrectas";
+                    if (msg.includes("User already registered")) msg = "Ese correo ya está registrado";
+                    if (msg.includes("Password should be at least")) msg = "La contraseña debe tener al menos 6 caracteres";
+                    setError(msg);
+                } finally {
+                    setIsLoading(false);
                 }
             };
 
             return (
                 <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
-                    <div className="glass p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-700">
+                    <div className="glass p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-700 relative overflow-hidden">
+
+                        {/* Decoración */}
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
+
                         <div className="text-center mb-8">
                             <div className="bg-blue-600/20 p-4 rounded-full inline-flex mb-4 border border-blue-500/30">
-                                <Icon name="lock" size={32} className="text-blue-400" />
+                                <Icon name={isLogin ? 'log-in' : 'user-plus'} size={32} className="text-blue-400" />
                             </div>
-                            <h2 className="text-2xl font-bold text-white tracking-tight">Iniciar Sesión</h2>
-                            <p className="text-slate-400 text-sm mt-2">Ingresa las credenciales para acceder</p>
+                            <h2 className="text-2xl font-bold text-white tracking-tight">
+                                {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+                            </h2>
+                            <p className="text-slate-400 text-sm mt-2">
+                                {isLogin ? 'Ingresa tus datos para acceder' : 'Regístrate para gestionar tu propia carpintería'}
+                            </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
@@ -1064,22 +1104,29 @@
                                     <Icon name="alert-circle" size={16} /> {error}
                                 </div>
                             )}
+                            {successMsg && (
+                                <div className="bg-emerald-500/10 text-emerald-400 p-3 rounded-lg text-sm text-center border border-emerald-500/20 flex items-center justify-center gap-2">
+                                    <Icon name="check-circle" size={16} /> {successMsg}
+                                </div>
+                            )}
+
                             <div>
-                                <label className="text-[10px] uppercase text-slate-400 block mb-1.5 font-bold tracking-wider">Usuario</label>
+                                <label className="text-[10px] uppercase text-slate-400 block mb-1.5 font-bold tracking-wider">Email</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                        <Icon name="user" size={18} />
+                                        <Icon name="mail" size={18} />
                                     </div>
                                     <input
-                                        type="text"
-                                        value={user}
-                                        onChange={(e) => setUser(e.target.value)}
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
                                         className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 p-3 focus:ring-2 focus:border-transparent ring-blue-500 outline-none text-white transition-all text-sm"
-                                        placeholder="admin"
-                                        autoComplete="username"
+                                        placeholder="tu@correo.com"
+                                        required
                                     />
                                 </div>
                             </div>
+
                             <div>
                                 <label className="text-[10px] uppercase text-slate-400 block mb-1.5 font-bold tracking-wider">Contraseña</label>
                                 <div className="relative group">
@@ -1092,14 +1139,30 @@
                                         onChange={(e) => setPass(e.target.value)}
                                         className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 p-3 focus:ring-2 focus:border-transparent ring-blue-500 outline-none text-white transition-all text-sm"
                                         placeholder="••••••••"
-                                        autoComplete="current-password"
+                                        minLength="6"
+                                        required
                                     />
                                 </div>
                             </div>
-                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_25px_rgba(37,99,235,0.5)] flex items-center justify-center gap-2 mt-4">
-                                <Icon name="log-in" size={20} /> Entrar
+
+                            <button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 p-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_25px_rgba(37,99,235,0.5)] flex items-center justify-center gap-2 mt-4">
+                                {isLoading ? <span className="animate-pulse">Cargando...</span> : (
+                                    <><Icon name={isLogin ? "log-in" : "check"} size={20} /> {isLogin ? 'Entrar' : 'Registrarme'}</>
+                                )}
                             </button>
                         </form>
+
+                        <div className="mt-8 text-center text-sm text-slate-400">
+                            {isLogin ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
+                            <button
+                                type="button"
+                                onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }}
+                                className="text-blue-400 hover:text-blue-300 font-semibold underline-offset-4 hover:underline transition-all"
+                            >
+                                {isLogin ? 'Regístrate aquí' : 'Inicia Sesión'}
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             );
@@ -1107,9 +1170,9 @@
 
         // --- Main App ---
         const App = () => {
-            const [isAuthenticated, setIsAuthenticated] = useState(() => {
-                return localStorage.getItem('fabrizio_auth') === 'true';
-            });
+            const [session, setSession] = useState(null);
+            const [isCheckingSession, setIsCheckingSession] = useState(true);
+
             const [tab, setTab] = useState('clients');
             // Default open on desktop, closed on mobile
             const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
