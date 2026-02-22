@@ -1206,20 +1206,39 @@
                 localStorage.setItem('fabrizio_suppliers', JSON.stringify(suppliers));
             }, [suppliers]);
 
-            const handleLogin = () => {
-                localStorage.setItem('fabrizio_auth', 'true');
-                setIsAuthenticated(true);
-            };
+            // Subscripción a estado de autenticación de Supabase
+            useEffect(() => {
+                if (!window.supabaseClient) {
+                    setIsCheckingSession(false);
+                    return;
+                }
 
-            const handleLogout = () => {
+                // Estado al cargar por primera vez
+                window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                    setSession(session);
+                    setIsCheckingSession(false);
+                });
+
+                // Escuchar cambios (login, logout, token refresh)
+                const { data: { subscription } } = window.supabaseClient.auth.onAuthStateChange((_event, session) => {
+                    setSession(session);
+                });
+
+                return () => subscription?.unsubscribe();
+            }, []);
+
+            const handleLogout = async () => {
                 if (confirm('¿Seguro que deseas cerrar sesión?')) {
-                    localStorage.removeItem('fabrizio_auth');
-                    setIsAuthenticated(false);
+                    await window.supabaseClient.auth.signOut();
                 }
             };
 
-            if (!isAuthenticated) {
-                return <Login onLogin={handleLogin} />;
+            if (isCheckingSession) {
+                return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-400">Verificando sesión...</div>;
+            }
+
+            if (!session) {
+                return <Login />;
             }
 
             return (
