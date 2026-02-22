@@ -82,10 +82,19 @@
 
         // --- Icons Helper ---
         const Icon = ({ name, size = 20, className = "" }) => {
+            const spanRef = React.useRef(null);
+
             useEffect(() => {
-                lucide.createIcons();
-            }, [name]);
-            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+                if (spanRef.current) {
+                    // Al usar innerHTML, ocultamos el <i> del control del árbol de React.
+                    // Lucide transformará este <i> en un <svg> pero React sólo se preocupará de desmontar el <span> padre
+                    // Esto arregla el crasheo críptico (NotFoundError: Failed to execute 'removeChild')
+                    spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className}" style="width: ${size}px; height: ${size}px;"></i>`;
+                    lucide.createIcons();
+                }
+            }, [name, size, className]);
+
+            return <span ref={spanRef} style={{ display: 'contents' }}></span>;
         };
 
         // --- Layout Components ---
