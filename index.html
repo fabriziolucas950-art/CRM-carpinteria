@@ -11,6 +11,10 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Prop-Types (Required for Recharts UMD) -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.js"></script>
+    <!-- Recharts -->
+    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -109,7 +113,7 @@
                 )}
 
                 <div className={`w-64 h-screen glass fixed left-0 top-0 flex flex-col p-4 z-50 transition-all duration-300 transform 
-                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
 
                     <div className="flex justify-between items-center mb-10 px-2">
                         <div className="flex items-center gap-3">
@@ -136,6 +140,12 @@
                         <button onClick={() => { setTab('suppliers'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all ${currentTab === 'suppliers' ? 'active' : ''}`}>
                             <Icon name="truck" /> Proveedores
                         </button>
+                        <button onClick={() => { setTab('costs'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 rounded-lg transition-all ${currentTab === 'costs' ? 'active' : ''}`}>
+                            <Icon name="receipt" /> Costos Operativos
+                        </button>
+                        <button onClick={() => { setTab('statistics'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 rounded-lg transition-all ${currentTab === 'statistics' ? 'active' : ''}`}>
+                            <Icon name="pie-chart" /> Estadísticas
+                        </button>
                     </nav>
 
                     <div className="mt-auto border-t border-slate-700 pt-4">
@@ -151,8 +161,13 @@
 
 
         const ClientManager = ({ clients, setClients, tenantId }) => {
-            const [newClient, setNewClient] = useState({ name: '', phone: '', address: '' });
+            const [newClient, setNewClient] = useState({ name: '', phone: '', address: '', city: '' });
+            const [searchTerm, setSearchTerm] = useState('');
+            const [sortBy, setSortBy] = useState('recent');
+            const [expandedClients, setExpandedClients] = useState({});
             const [isLoading, setIsLoading] = useState(false);
+            const [editingClient, setEditingClient] = useState(null);
+            const [editingBudget, setEditingBudget] = useState(null);
 
             // Cargar clientes desde Supabase al montar el componente
             useEffect(() => {
@@ -190,7 +205,8 @@
                                 tenant_id: tenantId,
                                 name: newClient.name,
                                 phone: newClient.phone,
-                                address: newClient.address
+                                address: newClient.address,
+                                city: newClient.city
                             }
                         ])
                         .select(); // Devuelve el registro insertado
@@ -199,7 +215,7 @@
 
                     if (data && data.length > 0) {
                         setClients([...clients, data[0]]);
-                        setNewClient({ name: '', phone: '', address: '' });
+                        setNewClient({ name: '', phone: '', address: '', city: '' });
                     }
                 } catch (error) {
                     console.error('Error al agregar cliente:', error);
@@ -227,9 +243,96 @@
                 }
             };
 
+            const updateClient = async (e) => {
+                e.preventDefault();
+                setIsLoading(true);
+                try {
+                    const { error } = await window.supabaseClient
+                        .from('clientes')
+                        .update({
+                            name: editingClient.name,
+                            phone: editingClient.phone,
+                            address: editingClient.address,
+                            city: editingClient.city
+                        })
+                        .eq('id', editingClient.id);
+
+                    if (error) throw error;
+
+                    setClients(clients.map(c => c.id === editingClient.id ? editingClient : c));
+                    setEditingClient(null);
+                } catch (error) {
+                    console.error("Error updating client", error);
+                    alert("Error al actualizar cliente.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const updateBudget = async (e) => {
+                e.preventDefault();
+                setIsLoading(true);
+                try {
+                    const { error } = await window.supabaseClient
+                        .from('presupuestos')
+                        .update({
+                            date: editingBudget.date,
+                            summary: editingBudget.summary,
+                            total: parseFloat(editingBudget.total) || 0
+                        })
+                        .eq('id', editingBudget.id);
+
+                    if (error) throw error;
+
+                    const updatedClients = clients.map(c => {
+                        if (c.id === editingBudget.client_id) {
+                            return {
+                                ...c,
+                                budgets: c.budgets.map(b => b.id === editingBudget.id ? {
+                                    ...b,
+                                    date: editingBudget.date,
+                                    summary: editingBudget.summary,
+                                    total: parseFloat(editingBudget.total) || 0
+                                } : b)
+                            };
+                        }
+                        return c;
+                    });
+                    setClients(updatedClients);
+                    setEditingBudget(null);
+                } catch (error) {
+                    console.error("Error updating budget", error);
+                    alert("Error al actualizar presupuesto.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
             return (
                 <div className="p-4 md:p-8">
-                    <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Mis Clientes</h2>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+                        <h2 className="text-2xl md:text-3xl font-bold">Mis Clientes</h2>
+                        <div className="relative w-full md:w-auto flex gap-2">
+                            <div className="relative flex-1 md:w-72">
+                                <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar clientes..."
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 ring-blue-500 outline-none text-sm text-slate-200 transition-all placeholder-slate-500 focus:bg-slate-800"
+                                />
+                            </div>
+                            <select
+                                value={sortBy}
+                                onChange={e => setSortBy(e.target.value)}
+                                className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2.5 outline-none text-sm text-slate-200 focus:ring-2 ring-blue-500 cursor-pointer"
+                            >
+                                <option value="recent">Recientes</option>
+                                <option value="debt">Con Deuda</option>
+                            </select>
+                        </div>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 glass p-6 rounded-2xl h-fit">
                             <h3 className="text-xl font-semibold mb-6">Nuevo Cliente</h3>
@@ -246,6 +349,15 @@
                                     <label className="text-xs uppercase text-slate-400 block mb-1">Dirección / Obra</label>
                                     <input value={newClient.address} onChange={e => setNewClient({ ...newClient, address: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="Calle Falsa 123" />
                                 </div>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-400 block mb-1">Localidad</label>
+                                    <input
+                                        value={newClient.city}
+                                        onChange={e => setNewClient({ ...newClient, city: e.target.value })}
+                                        className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none"
+                                        placeholder="Ej: Junín"
+                                    />
+                                </div>
                                 <button onClick={addClient} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
                                     <Icon name="user-plus" /> {isLoading ? 'Guardando...' : 'Guardar Cliente'}
                                 </button>
@@ -253,117 +365,370 @@
                         </div>
 
                         <div className="lg:col-span-2 space-y-4">
-                            {clients.length === 0 ? (
-                                <div className="glass p-10 rounded-2xl text-center text-slate-500">No hay clientes registrados</div>
-                            ) : (
-                                clients.map(c => (
-                                    <div key={c.id} className="glass p-6 rounded-2xl group hover:border-blue-500/50 transition-all space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex gap-4 items-center">
-                                                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-xl uppercase">
-                                                    {c.name ? c.name[0] : '?'}
+                            {(() => {
+                                let filteredClients = clients.filter(c => {
+                                    const search = searchTerm.toLowerCase();
+                                    return (c.name || '').toLowerCase().includes(search) ||
+                                        (c.phone || '').toLowerCase().includes(search) ||
+                                        (c.address || '').toLowerCase().includes(search) ||
+                                        (c.city || '').toLowerCase().includes(search);
+                                });
+
+                                if (sortBy === 'debt') {
+                                    filteredClients.sort((a, b) => {
+                                        const debtA = (a.budgets || []).reduce((acc, bud) => acc + (bud.total - (bud.paid || 0)), 0);
+                                        const debtB = (b.budgets || []).reduce((acc, bud) => acc + (bud.total - (bud.paid || 0)), 0);
+                                        return debtB - debtA;
+                                    });
+                                } else {
+                                    filteredClients.sort((a, b) => b.id - a.id);
+                                }
+
+                                if (clients.length === 0) {
+                                    return <div className="glass p-10 rounded-2xl text-center text-slate-500">No hay clientes registrados</div>;
+                                }
+
+                                if (filteredClients.length === 0) {
+                                    return <div className="glass p-10 rounded-2xl text-center text-slate-500">Ningún cliente coincide con la búsqueda '{searchTerm}'</div>;
+                                }
+
+                                return filteredClients.map(c => {
+                                    const totalDebt = (c.budgets || []).reduce((acc, b) => acc + (b.total - (b.paid || 0)), 0);
+
+                                    return (
+                                        <div key={c.id} className="glass p-6 rounded-2xl group hover:border-blue-500/50 transition-all space-y-4">
+                                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                                <div className="flex gap-4 items-start">
+                                                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-xl uppercase shrink-0">
+                                                        {c.name ? c.name[0] : '?'}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-lg">{c.name || 'Sin nombre'}</h4>
+                                                        <div className="flex flex-col sm:flex-row sm:gap-4 text-xs sm:text-sm text-slate-400 mb-2 mt-1">
+                                                            <span className="flex items-center gap-1"><Icon name="phone" size={14} /> {c.phone || '-'}</span>
+                                                            <span className="flex items-center gap-1"><Icon name="map-pin" size={14} /> {c.address || '-'}</span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {c.city && <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">{c.city}</span>}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-lg">{c.name || 'Sin nombre'}</h4>
-                                                    <div className="flex flex-col sm:flex-row sm:gap-4 text-xs sm:text-sm text-slate-400">
-                                                        <span className="flex items-center gap-1"><Icon name="phone" size={14} /> {c.phone || '-'}</span>
-                                                        <span className="flex items-center gap-1"><Icon name="map-pin" size={14} /> {c.address || '-'}</span>
+                                                <div className="flex flex-col items-end gap-3 h-full justify-between">
+                                                    {totalDebt > 0 && (
+                                                        <div className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg text-xs font-bold font-mono tracking-wider shadow-sm flex items-center gap-2">
+                                                            <Icon name="alert-circle" size={14} /> DEUDA: ${totalDebt.toLocaleString()}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => setEditingClient(c)} className="p-2 glass rounded-lg hover:bg-slate-500/20 text-slate-400" title="Editar Cliente"><Icon name="edit-2" /></button>
+                                                        <a href={c.phone ? `https://wa.me/${c.phone.replace(/\D/g, '')}` : '#'} target={c.phone ? "_blank" : "_self"} className="p-2 glass rounded-lg hover:bg-green-500/20 text-green-400" title="WhatsApp"><Icon name="message-circle" /></a>
+                                                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.address || ''} ${c.city || ''}`)}`} target="_blank" className="p-2 glass rounded-lg hover:bg-blue-500/20 text-blue-400" title="Google Maps"><Icon name="map" /></a>
+                                                        <button onClick={() => deleteClient(c.id)} className="p-2 glass rounded-lg hover:bg-red-500/20 text-red-400" title="Eliminar Cliente"><Icon name="trash-2" /></button>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <a href={c.phone ? `https://wa.me/${c.phone.replace(/\D/g, '')}` : '#'} target={c.phone ? "_blank" : "_self"} className="p-2 glass rounded-lg hover:bg-green-500/20 text-green-400"><Icon name="message-circle" /></a>
-                                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address || '')}`} target="_blank" className="p-2 glass rounded-lg hover:bg-blue-500/20 text-blue-400"><Icon name="map" /></a>
-                                                <button onClick={() => deleteClient(c.id)} className="p-2 glass rounded-lg hover:bg-red-500/20 text-red-400"><Icon name="trash-2" /></button>
+
+                                            {/* Budgets History */}
+                                            <div className="border-t border-slate-700/50 pt-3">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <h5 className="text-[10px] uppercase text-slate-500 font-bold flex items-center gap-2 tracking-wider">
+                                                        <Icon name="history" size={12} /> Presupuestos Registrados
+                                                    </h5>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    {(!c.budgets || c.budgets.length === 0) ? (
+                                                        <p className="text-xs text-slate-600 italic">No hay cotizaciones registradas para este cliente.</p>
+                                                    ) : (
+                                                        c.budgets.slice().reverse().map((b, idx) => {
+                                                            const paid = b.paid || 0;
+                                                            const balance = b.total - paid;
+                                                            const isFullyPaid = balance <= 0;
+
+                                                            const addPayment = async () => {
+                                                                const amount = prompt(`Ingrese monto cobrado para: ${b.summary}\nSaldo pendiente: $${balance.toLocaleString()}`, "0");
+                                                                if (amount === null || isNaN(amount) || amount === "") return;
+
+                                                                const numAmount = parseFloat(amount);
+                                                                const newPaid = (b.paid || 0) + numAmount;
+
+                                                                try {
+                                                                    // 1. Guardar en tabla transacciones_clientes (Para Estadisticas/Flujo Caja)
+                                                                    await window.supabaseClient.from('transacciones_clientes').insert([{
+                                                                        tenant_id: tenantId,
+                                                                        client_id: c.id,
+                                                                        tipo: 'COBRO',
+                                                                        monto: numAmount,
+                                                                        descripcion: `Pago sobre Presupuesto: ${b.summary}`
+                                                                    }]);
+
+                                                                    // 2. Actualizar cache visual en tabla presupuestos (Para la Vista de Clientes)
+                                                                    const { error } = await window.supabaseClient
+                                                                        .from('presupuestos')
+                                                                        .update({ paid: newPaid })
+                                                                        .eq('id', b.id);
+
+                                                                    if (error) throw error;
+
+                                                                    const updated = clients.map(client => {
+                                                                        if (client.id === c.id) {
+                                                                            return {
+                                                                                ...client,
+                                                                                budgets: client.budgets.map(bud =>
+                                                                                    bud.id === b.id ? { ...bud, paid: newPaid } : bud
+                                                                                )
+                                                                            };
+                                                                        }
+                                                                        return client;
+                                                                    });
+                                                                    setClients(updated);
+                                                                } catch (error) {
+                                                                    console.error("Error al actualizar pago:", error);
+                                                                    alert("Error al guardar pago en Supabase: " + error.message);
+                                                                }
+                                                            };
+
+                                                            const updateBudgetStatus = async (newStatus) => {
+                                                                try {
+                                                                    const { error } = await window.supabaseClient
+                                                                        .from('presupuestos')
+                                                                        .update({ status: newStatus })
+                                                                        .eq('id', b.id);
+                                                                    if (error) throw error;
+                                                                    const updated = clients.map(client => client.id === c.id ? {
+                                                                        ...client,
+                                                                        budgets: client.budgets.map(bud => bud.id === b.id ? { ...bud, status: newStatus } : bud)
+                                                                    } : client);
+                                                                    setClients(updated);
+                                                                } catch (error) {
+                                                                    console.error("Error updating status", error);
+                                                                    alert("Error al actualizar estado: " + error.message);
+                                                                }
+                                                            };
+
+                                                            const handleFileUpload = async (event, type) => {
+                                                                const file = event.target.files[0];
+                                                                if (!file) return;
+
+                                                                const fileExt = file.name.split('.').pop();
+                                                                const fileName = `${tenantId}/${c.id}/${b.id}/${type}_${Date.now()}.${fileExt}`;
+
+                                                                let note = '';
+                                                                if (type === 'plans') {
+                                                                    note = prompt("¿Quién tomó las medidas? (Opcional, Ej: Carlos, Lucas, Cliente):", "");
+                                                                    if (note === null) return; // Canceló
+                                                                } else if (type === 'receipts') {
+                                                                    note = prompt("Anotación para el comprobante (Opcional, Ej: Seña 50% Transferencia):", "");
+                                                                    if (note === null) return; // Canceló
+                                                                }
+
+                                                                try {
+                                                                    alert("Subiendo archivo a la nube, por favor espere...");
+                                                                    const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+                                                                        .from('archivos_crm')
+                                                                        .upload(fileName, file);
+
+                                                                    if (uploadError) throw uploadError;
+
+                                                                    const { data: urlData } = window.supabaseClient.storage.from('archivos_crm').getPublicUrl(fileName);
+                                                                    const fileUrl = urlData.publicUrl;
+
+                                                                    const newFileObj = {
+                                                                        url: fileUrl,
+                                                                        name: file.name,
+                                                                        note: note || '',
+                                                                        date: new Date().toISOString()
+                                                                    };
+
+                                                                    const currentFiles = b[type] || [];
+                                                                    const updatedFiles = [...currentFiles, newFileObj];
+
+                                                                    const { error: dbError } = await window.supabaseClient
+                                                                        .from('presupuestos')
+                                                                        .update({ [type]: updatedFiles })
+                                                                        .eq('id', b.id);
+
+                                                                    if (dbError) throw dbError;
+
+                                                                    const updated = clients.map(client => client.id === c.id ? {
+                                                                        ...client,
+                                                                        budgets: client.budgets.map(bud => bud.id === b.id ? { ...bud, [type]: updatedFiles } : bud)
+                                                                    } : client);
+                                                                    setClients(updated);
+                                                                    alert("¡Archivo subido exitosamente!");
+                                                                } catch (error) {
+                                                                    console.error("Error uploading file", error);
+                                                                    alert("Error al subir archivo: " + error.message);
+                                                                }
+                                                            };
+
+                                                            return (
+                                                                <div key={b.id || idx} className={`bg-slate-900/40 p-4 rounded-xl border transition-all ${isFullyPaid ? 'border-emerald-500/30' : 'border-transparent hover:border-slate-700'}`}>
+                                                                    <div className="flex justify-between items-start mb-3">
+                                                                        <div className="flex-grow">
+                                                                            <span className="text-slate-400 text-[10px] block mb-1 font-mono uppercase">
+                                                                                {b.date ? new Date(b.date).toLocaleDateString('es-AR', { timeZone: 'UTC' }) : ''}
+                                                                            </span>
+                                                                            <span className="text-slate-200 block text-sm leading-tight font-medium">{b.summary}</span>
+                                                                        </div>
+                                                                        <div className="flex gap-1.5 flex-wrap justify-end">
+                                                                            <button onClick={() => setEditingBudget({ ...b, client_id: c.id })} className="flex items-center gap-1.5 bg-slate-600/20 text-slate-400 hover:bg-slate-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1" title="Editar Presupuesto">
+                                                                                <Icon name="edit-2" size={12} /> Editar
+                                                                            </button>
+                                                                            <button onClick={addPayment} className="flex items-center gap-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1">
+                                                                                <Icon name="plus" size={12} /> Pago
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Actions: Status + Attachments */}
+                                                                    <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 custom-scrollbar">
+                                                                        <button onClick={() => updateBudgetStatus('aprobado')} title="Marcar como Aprobado" className={`shrink-0 flex justify-center items-center gap-1 text-[10px] font-bold uppercase px-3 py-1.5 rounded-md border transition-colors ${b.status === 'aprobado' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><Icon name="check-circle" size={12} /> Aprobado</button>
+                                                                        <button onClick={() => updateBudgetStatus('rechazado')} title="Marcar como Rechazado" className={`shrink-0 flex justify-center items-center gap-1 text-[10px] font-bold uppercase px-3 py-1.5 rounded-md border transition-colors ${b.status === 'rechazado' ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><Icon name="x-circle" size={12} /> Rechazado</button>
+                                                                        <button onClick={() => updateBudgetStatus('terminado')} title="Marcar como Terminado" className={`shrink-0 flex justify-center items-center gap-1 text-[10px] font-bold uppercase px-3 py-1.5 rounded-md border transition-colors ${b.status === 'terminado' ? 'bg-slate-600/50 border-slate-500/50 text-slate-300' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><Icon name="package" size={12} /> Terminado</button>
+
+                                                                        <div className="shrink-0 relative">
+                                                                            <input type="file" id={`upload-receipt-${b.id}`} className="hidden" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, 'receipts')} />
+                                                                            <label htmlFor={`upload-receipt-${b.id}`} className="flex items-center justify-center gap-1.5 bg-orange-600/90 hover:bg-orange-500 text-white px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap">
+                                                                                Adjuntar Comprobante
+                                                                            </label>
+                                                                        </div>
+                                                                        <div className="shrink-0 relative">
+                                                                            <input type="file" id={`upload-plan-${b.id}`} className="hidden" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, 'plans')} />
+                                                                            <label htmlFor={`upload-plan-${b.id}`} className="flex items-center justify-center gap-1.5 bg-orange-600/90 hover:bg-orange-500 text-white px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap">
+                                                                                Adj. Planos
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 mb-3">
+                                                                        <div>
+                                                                            <span className="text-[9px] text-slate-500 uppercase block">Total</span>
+                                                                            <span className="text-sm font-mono text-slate-300">${b.total.toLocaleString()}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-slate-500 uppercase block">Entregado</span>
+                                                                            <span className="text-sm font-mono text-emerald-400">${paid.toLocaleString()}</span>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <span className="text-[9px] text-slate-500 uppercase block">Saldo</span>
+                                                                            <span className={`text-sm font-mono font-bold ${isFullyPaid ? 'text-emerald-500' : 'text-orange-400'}`}>
+                                                                                {isFullyPaid ? 'PAGADO' : `$${balance.toLocaleString()}`}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* File Uploads Lists */}
+                                                                    {((b.receipts && b.receipts.length > 0) || (b.plans && b.plans.length > 0)) && (
+                                                                        <div className="pt-3 border-t border-slate-800 flex flex-col gap-3">
+
+                                                                            {(b.receipts && b.receipts.length > 0) && (
+                                                                                <div className="space-y-1">
+                                                                                    <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Comprobantes de Pago</span>
+                                                                                    <div className="flex flex-col gap-1.5">
+                                                                                        {b.receipts.map((r, i) => (
+                                                                                            <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[10px] text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 p-2 rounded-lg border border-blue-500/20 transition-colors">
+                                                                                                <Icon name="file-text" size={12} className="shrink-0" />
+                                                                                                <span className="truncate">{r.note ? `${r.note}` : `Comprobante ${i + 1}`}</span>
+                                                                                            </a>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {(b.plans && b.plans.length > 0) && (
+                                                                                <div className="space-y-1 mt-1">
+                                                                                    <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Planos y Diseños</span>
+                                                                                    <div className="flex flex-col gap-1.5">
+                                                                                        {b.plans.map((p, i) => (
+                                                                                            <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[10px] text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 p-2 rounded-lg border border-purple-500/20 transition-colors">
+                                                                                                <Icon name="image" size={12} className="shrink-0" />
+                                                                                                <span className="truncate">{p.note ? `Medidas: ${p.note}` : `Plano ${i + 1}`}</span>
+                                                                                            </a>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-
-                                        {/* Budgets History */}
-                                        <div className="border-t border-slate-700/50 pt-3">
-                                            <h5 className="text-[10px] uppercase text-slate-500 font-bold mb-3 flex items-center gap-2 tracking-wider">
-                                                <Icon name="history" size={12} /> Presupuestos Registrados
-                                            </h5>
-                                            <div className="space-y-3">
-                                                {(!c.budgets || c.budgets.length === 0) ? (
-                                                    <p className="text-xs text-slate-600 italic">No hay cotizaciones registradas para este cliente.</p>
-                                                ) : (
-                                                    c.budgets.slice().reverse().map((b, idx) => {
-                                                        const paid = b.paid || 0;
-                                                        const balance = b.total - paid;
-                                                        const isFullyPaid = balance <= 0;
-
-                                                        const addPayment = async () => {
-                                                            const amount = prompt(`Ingrese monto cobrado para: ${b.summary}\nSaldo pendiente: $${balance.toLocaleString()}`, "0");
-                                                            if (amount === null || isNaN(amount) || amount === "") return;
-
-                                                            const newPaid = (b.paid || 0) + parseFloat(amount);
-
-                                                            try {
-                                                                const { error } = await window.supabaseClient
-                                                                    .from('presupuestos')
-                                                                    .update({ paid: newPaid })
-                                                                    .eq('id', b.id);
-
-                                                                if (error) throw error;
-
-                                                                const updated = clients.map(client => {
-                                                                    if (client.id === c.id) {
-                                                                        return {
-                                                                            ...client,
-                                                                            budgets: client.budgets.map(bud =>
-                                                                                bud.id === b.id ? { ...bud, paid: newPaid } : bud
-                                                                            )
-                                                                        };
-                                                                    }
-                                                                    return client;
-                                                                });
-                                                                setClients(updated);
-                                                            } catch (error) {
-                                                                console.error("Error al actualizar pago:", error);
-                                                                alert("Error al guardar pago en Supabase: " + error.message);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <div key={b.id || idx} className={`bg-slate-900/40 p-4 rounded-xl border transition-all ${isFullyPaid ? 'border-emerald-500/30' : 'border-transparent hover:border-slate-700'}`}>
-                                                                <div className="flex justify-between items-start mb-3">
-                                                                    <div className="flex-grow">
-                                                                        <span className="text-slate-400 text-[10px] block mb-1 font-mono uppercase">{b.date}</span>
-                                                                        <span className="text-slate-200 block text-sm leading-tight font-medium">{b.summary}</span>
-                                                                    </div>
-                                                                    <button onClick={addPayment} className="flex items-center gap-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors">
-                                                                        <Icon name="plus" size={12} /> Pago
-                                                                    </button>
-                                                                </div>
-
-                                                                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800">
-                                                                    <div>
-                                                                        <span className="text-[9px] text-slate-500 uppercase block">Total</span>
-                                                                        <span className="text-sm font-mono text-slate-300">${b.total.toLocaleString()}</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <span className="text-[9px] text-slate-500 uppercase block">Entregado</span>
-                                                                        <span className="text-sm font-mono text-emerald-400">${paid.toLocaleString()}</span>
-                                                                    </div>
-                                                                    <div className="text-right">
-                                                                        <span className="text-[9px] text-slate-500 uppercase block">Saldo</span>
-                                                                        <span className={`text-sm font-mono font-bold ${isFullyPaid ? 'text-emerald-500' : 'text-orange-400'}`}>
-                                                                            {isFullyPaid ? 'PAGADO' : `$${balance.toLocaleString()}`}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                                    );
+                                })
+                            })()}
                         </div>
                     </div>
-                </div>
+
+                    {/* Edit Client Modal */}
+                    {
+                        editingClient && (
+                            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                                <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+                                    <button onClick={() => setEditingClient(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+                                        <Icon name="x" size={20} />
+                                    </button>
+                                    <h3 className="text-xl font-bold mb-4">Editar Cliente</h3>
+                                    <form onSubmit={updateClient} className="space-y-4">
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Nombre y Apellido</label>
+                                            <input required value={editingClient.name} onChange={e => setEditingClient({ ...editingClient, name: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Teléfono</label>
+                                            <input value={editingClient.phone} onChange={e => setEditingClient({ ...editingClient, phone: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Dirección / Obra</label>
+                                            <input value={editingClient.address} onChange={e => setEditingClient({ ...editingClient, address: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Localidad</label>
+                                            <input value={editingClient.city} onChange={e => setEditingClient({ ...editingClient, city: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none" />
+                                        </div>
+                                        <button disabled={isLoading} type="submit" className="w-full flex items-center justify-center py-3 rounded-lg text-sm font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-500 text-white transition-all disabled:opacity-50">
+                                            {isLoading ? 'Guardando...' : 'Guardar Cambios'}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {/* Edit Budget Modal */}
+                    {
+                        editingBudget && (
+                            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                                <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+                                    <button onClick={() => setEditingBudget(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+                                        <Icon name="x" size={20} />
+                                    </button>
+                                    <h3 className="text-xl font-bold mb-4">Editar Presupuesto</h3>
+                                    <form onSubmit={updateBudget} className="space-y-4">
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Fecha (YYYY-MM-DD)</label>
+                                            <input type="date" required value={editingBudget.date ? editingBudget.date.split('T')[0] : ''} onChange={e => setEditingBudget({ ...editingBudget, date: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none text-slate-200" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Resumen del Trabajo</label>
+                                            <input required value={editingBudget.summary} onChange={e => setEditingBudget({ ...editingBudget, summary: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none text-slate-200" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Total ($)</label>
+                                            <input type="number" required value={editingBudget.total} onChange={e => setEditingBudget({ ...editingBudget, total: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none text-slate-200" min="0" />
+                                        </div>
+                                        <button disabled={isLoading} type="submit" className="w-full flex items-center justify-center py-3 rounded-lg text-sm font-bold uppercase tracking-wider bg-orange-600 hover:bg-orange-500 text-white transition-all disabled:opacity-50 mt-6">
+                                            {isLoading ? 'Guardando...' : 'Aplicar Cambios'}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        )
+                    }
+                </div >
             );
         };
 
@@ -944,30 +1309,80 @@
                                 suppliers.map(s => {
                                     const totalDebt = (s.debts || []).reduce((acc, d) => acc + d.amount, 0);
 
-                                    const addDebt = () => {
+                                    const addDebt = async () => {
                                         const amount = prompt("Ingrese monto a AÑADIR a la deuda (ej. 50000):", "");
                                         if (amount === null || isNaN(amount) || amount === "") return;
 
                                         const desc = prompt("Descripción de la deuda (opcional):", "Compra de mercadería");
+                                        const numAmount = parseFloat(amount);
+                                        const newDebt = { id: Date.now(), amount: numAmount, desc: desc || "Deuda", date: new Date().toLocaleDateString() };
+                                        const updatedArray = [...(s.debts || []), newDebt];
 
-                                        const newDebt = { id: Date.now(), amount: parseFloat(amount), desc: desc || "Deuda", date: new Date().toLocaleDateString() };
+                                        try {
+                                            // 1. Guardar en histórico para Estadísticas
+                                            await window.supabaseClient.from('transacciones_proveedores').insert([{
+                                                tenant_id: tenantId,
+                                                supplier_id: s.id,
+                                                tipo: 'DEUDA',
+                                                monto: numAmount,
+                                                descripcion: desc || "Deuda"
+                                            }]);
 
-                                        const updated = suppliers.map(prov =>
-                                            prov.id === s.id ? { ...prov, debts: [...(prov.debts || []), newDebt] } : prov
-                                        );
-                                        setSuppliers(updated);
+                                            // 2. Guardar JSONB caché en proveedores para visualización en agenda
+                                            const { error } = await window.supabaseClient
+                                                .from('proveedores')
+                                                .update({ debts: updatedArray })
+                                                .eq('id', s.id);
+
+                                            // Fallback gracil por si la BD omite JSONB column, para que no explote
+                                            if (error && !error.message.includes('column "debts" of relation "proveedores" does not exist')) {
+                                                throw error;
+                                            }
+
+                                            const updated = suppliers.map(prov =>
+                                                prov.id === s.id ? { ...prov, debts: updatedArray } : prov
+                                            );
+                                            setSuppliers(updated);
+                                        } catch (e) {
+                                            alert("Error guardando deuda en BD: " + e.message);
+                                        }
                                     };
 
-                                    const addPayment = () => {
+                                    const addPayment = async () => {
                                         const amount = prompt(`Ingrese monto a PAGAR/DESCONTAR de la deuda:\n(Deuda actual: $${totalDebt.toLocaleString()})`, "");
                                         if (amount === null || isNaN(amount) || amount === "") return;
 
-                                        const newDebt = { id: Date.now(), amount: -Math.abs(parseFloat(amount)), desc: "Pago realizado", date: new Date().toLocaleDateString() };
+                                        const numAmount = Math.abs(parseFloat(amount));
+                                        const newDebt = { id: Date.now(), amount: -numAmount, desc: "Pago realizado a proveedor", date: new Date().toLocaleDateString() };
+                                        const updatedArray = [...(s.debts || []), newDebt];
 
-                                        const updated = suppliers.map(prov =>
-                                            prov.id === s.id ? { ...prov, debts: [...(prov.debts || []), newDebt] } : prov
-                                        );
-                                        setSuppliers(updated);
+                                        try {
+                                            // 1. Guardar en histórico para Estadísticas
+                                            await window.supabaseClient.from('transacciones_proveedores').insert([{
+                                                tenant_id: tenantId,
+                                                supplier_id: s.id,
+                                                tipo: 'PAGO',
+                                                monto: numAmount,
+                                                descripcion: "Pago a proveedor"
+                                            }]);
+
+                                            // 2. Guardar JSONB caché en proveedores
+                                            const { error } = await window.supabaseClient
+                                                .from('proveedores')
+                                                .update({ debts: updatedArray })
+                                                .eq('id', s.id);
+
+                                            if (error && !error.message.includes('column "debts" of relation "proveedores" does not exist')) {
+                                                throw error;
+                                            }
+
+                                            const updated = suppliers.map(prov =>
+                                                prov.id === s.id ? { ...prov, debts: updatedArray } : prov
+                                            );
+                                            setSuppliers(updated);
+                                        } catch (e) {
+                                            alert("Error guardando pago en BD: " + e.message);
+                                        }
                                     };
 
                                     return (
@@ -1153,6 +1568,224 @@
             );
         };
 
+        const OperativeCosts = ({ tenantId }) => {
+            return (
+                <div className="p-4 md:p-8 pb-20">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-orange-400 flex items-center gap-3">
+                        <Icon name="receipt" size={28} /> Costos Operativos
+                    </h2>
+                    <div className="glass p-10 rounded-2xl text-center">
+                        <Icon name="hammer" size={48} className="mx-auto text-slate-500 mb-4 opacity-50" />
+                        <h3 className="text-xl font-semibold text-slate-300 mb-2">Sección en Construcción</h3>
+                        <p className="text-slate-500 max-w-md mx-auto">
+                            Este es el contenedor vacío preparado para la lógica de Costos Operativos que necesites.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        const Statistics = ({ tenantId }) => {
+            const [stats, setStats] = useState({ owed: 0, collected: 0, toPay: 0, costs: 0 });
+            const [chartData, setChartData] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+
+            // Visibility Toggles (Ojitos state)
+            const [showOwed, setShowOwed] = useState(true);
+            const [showCollected, setShowCollected] = useState(true);
+            const [showToPay, setShowToPay] = useState(true);
+
+            // Fetch Data
+            useEffect(() => {
+                if (!tenantId) return;
+
+                const loadDashboardData = async () => {
+                    setIsLoading(true);
+                    try {
+                        const { data: clientsData } = await window.supabaseClient.from('clientes').select('id, budgets:presupuestos(total, paid)').eq('tenant_id', tenantId);
+                        let totalOwed = 0;
+                        let totalCollected = 0;
+                        if (clientsData) {
+                            clientsData.forEach(c => {
+                                if (c.budgets) {
+                                    c.budgets.forEach(b => {
+                                        const total = b.total || 0;
+                                        const paid = b.paid || 0;
+                                        totalCollected += paid;
+                                        totalOwed += (total - paid);
+                                    });
+                                }
+                            });
+                        }
+
+                        const { data: suppliersData } = await window.supabaseClient.from('proveedores').select('debts').eq('tenant_id', tenantId);
+                        let totalToPay = 0;
+                        if (suppliersData) {
+                            suppliersData.forEach(s => {
+                                if (s.debts) {
+                                    totalToPay += s.debts.reduce((acc, d) => acc + (d.amount || 0), 0);
+                                }
+                            });
+                        }
+
+                        setStats({ owed: totalOwed, collected: totalCollected, toPay: totalToPay, costs: 0 });
+
+                        const { data: transClientes } = await window.supabaseClient.from('transacciones_clientes').select('*').eq('tenant_id', tenantId);
+                        const { data: transProveedores } = await window.supabaseClient.from('transacciones_proveedores').select('*').eq('tenant_id', tenantId);
+
+                        const monthlyData = {};
+
+                        const getMonthYear = (dateString) => {
+                            const d = new Date(dateString);
+                            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                            return `${months[d.getMonth()]} ${d.getFullYear()}`;
+                        };
+
+                        (transClientes || []).forEach(tc => {
+                            if (tc.tipo === 'COBRO') {
+                                const my = getMonthYear(tc.created_at);
+                                if (!monthlyData[my]) monthlyData[my] = { name: my, Entradas: 0, Salidas: 0, Orden: new Date(tc.created_at).getTime() };
+                                monthlyData[my].Entradas += Number(tc.monto);
+                            }
+                        });
+
+                        (transProveedores || []).forEach(tp => {
+                            if (tp.tipo === 'PAGO') {
+                                const my = getMonthYear(tp.created_at);
+                                if (!monthlyData[my]) monthlyData[my] = { name: my, Entradas: 0, Salidas: 0, Orden: new Date(tp.created_at).getTime() };
+                                monthlyData[my].Salidas += Math.abs(Number(tp.monto));
+                            }
+                        });
+
+                        const sortedChartData = Object.values(monthlyData).sort((a, b) => a.Orden - b.Orden);
+                        setChartData(sortedChartData);
+
+                    } catch (e) {
+                        console.error("Error loading stats", e);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+
+                loadDashboardData();
+            }, [tenantId]);
+
+            return (
+                <div className="p-4 md:p-8 pb-20">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-blue-400 flex items-center gap-3">
+                        <Icon name="bar-chart-2" size={28} /> Estadísticas {isLoading && <Icon name="loader" size={24} className="animate-spin text-slate-500" />}
+                    </h2>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        {/* LEFT PANEL: KPIs & Toggles */}
+                        <div className="lg:col-span-1 space-y-4">
+
+                            {/* Card 1: Adeudado */}
+                            <div className="glass rounded-xl overflow-hidden border border-blue-500/20 group relative">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full -z-10"></div>
+                                <div className="p-5">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-sm font-bold uppercase text-slate-300">Total Adeudado</h3>
+                                        <button onClick={() => setShowOwed(!showOwed)} className={`p-1.5 rounded-lg transition-colors ${showOwed ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
+                                            <Icon name={showOwed ? "eye" : "eye-off"} size={16} />
+                                        </button>
+                                    </div>
+                                    <p className="text-2xl font-mono font-bold text-white mb-1">
+                                        {isLoading ? '...' : (showOwed ? `$${stats.owed.toLocaleString()}` : '****')}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 uppercase">Suma de deudas de Clientes</p>
+                                </div>
+                            </div>
+
+                            {/* Card 2: Cobrado */}
+                            <div className="glass rounded-xl overflow-hidden border border-blue-500/20 group relative">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full -z-10"></div>
+                                <div className="p-5">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-sm font-bold uppercase text-slate-300">Total Cobrado</h3>
+                                        <button onClick={() => setShowCollected(!showCollected)} className={`p-1.5 rounded-lg transition-colors ${showCollected ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
+                                            <Icon name={showCollected ? "eye" : "eye-off"} size={16} />
+                                        </button>
+                                    </div>
+                                    <p className="text-2xl font-mono font-bold text-white mb-1">
+                                        {isLoading ? '...' : (showCollected ? `$${stats.collected.toLocaleString()}` : '****')}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 uppercase">Suma cobrada de Clientes</p>
+                                </div>
+                            </div>
+
+                            {/* Card 3: A Pagar */}
+                            <div className="glass rounded-xl overflow-hidden border border-blue-500/20 group relative">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full -z-10"></div>
+                                <div className="p-5">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-sm font-bold uppercase text-slate-300">Total a Pagar</h3>
+                                        <button onClick={() => setShowToPay(!showToPay)} className={`p-1.5 rounded-lg transition-colors ${showToPay ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
+                                            <Icon name={showToPay ? "eye" : "eye-off"} size={16} />
+                                        </button>
+                                    </div>
+                                    <p className="text-2xl font-mono font-bold text-white mb-1">
+                                        {isLoading ? '...' : (showToPay ? `$${stats.toPay.toLocaleString()}` : '****')}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 uppercase">Suma de deudas a Proveedores</p>
+                                </div>
+                            </div>
+
+                            {/* Card 4: Costos Repetidor */}
+                            <div className="glass bg-blue-900/20 rounded-xl overflow-hidden border border-blue-500/30 group relative mt-8 flex flex-col items-center justify-center p-5">
+                                <h3 className="text-sm font-bold uppercase text-blue-300 mb-2">Costos Operativos</h3>
+                                <p className="text-xl font-mono font-bold text-blue-100 mb-1">
+                                    {isLoading ? '...' : `$${stats.costs.toLocaleString()}`}
+                                </p>
+                                <p className="text-[10px] text-blue-300/60 uppercase text-center">Suma de todos los costos (Próximamente)</p>
+                            </div>
+
+                        </div>
+
+                        {/* RIGHT PANEL: Chart Area */}
+                        <div className="lg:col-span-3 glass p-6 rounded-2xl flex flex-col">
+                            <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2"><Icon name="activity" /> Flujo de Caja Mensual</h3>
+                            <div className="flex-grow flex items-center justify-center min-h-[400px]">
+                                {isLoading ? (
+                                    <div className="text-slate-400 text-center relative w-full h-full flex flex-col items-center justify-center">
+                                        <Icon name="loader" size={48} className="mx-auto mb-4 animate-[spin_2s_linear_infinite] opacity-50" />
+                                        <span className="animate-pulse">Calculando gráficas Recharts...</span>
+                                    </div>
+                                ) : (!window.Recharts || !window.Recharts.ResponsiveContainer) ? (
+                                    <div className="text-center text-slate-500">
+                                        <Icon name="loader" size={48} className="mx-auto opacity-30 mb-4 animate-[spin_2s_linear_infinite]" />
+                                        <span className="block text-sm">Cargando módulos de gráficas...</span>
+                                    </div>
+                                ) : chartData.length === 0 ? (
+                                    <div className="text-center text-slate-500">
+                                        <Icon name="x-circle" size={48} className="mx-auto opacity-30 mb-4" />
+                                        <span className="block text-sm">No hay flujos de pagos o cobros recientes.</span>
+                                    </div>
+                                ) : (
+                                    <window.Recharts.ResponsiveContainer width="100%" height="100%">
+                                        <window.Recharts.LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                            <window.Recharts.CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                            <window.Recharts.XAxis dataKey="name" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12 }} tickLine={false} axisLine={false} />
+                                            <window.Recharts.YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value / 1000}k`} />
+                                            <window.Recharts.Tooltip
+                                                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px', color: '#f8fafc' }}
+                                                itemStyle={{ fontWeight: 'bold' }}
+                                                formatter={(value) => [`$${value.toLocaleString()}`, '']}
+                                            />
+                                            <window.Recharts.Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                            {(showCollected) && <window.Recharts.Line type="monotone" name="Ingresos (Cobrado)" dataKey="Entradas" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 6 }} />}
+                                            {(showToPay || showOwed) && <window.Recharts.Line type="monotone" name="Egresos (Pagado)" dataKey="Salidas" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, fill: '#ef4444', strokeWidth: 0 }} activeDot={{ r: 6 }} />}
+                                        </window.Recharts.LineChart>
+                                    </window.Recharts.ResponsiveContainer>
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        };
+
         // --- Main App ---
         const App = () => {
             const [session, setSession] = useState(null);
@@ -1260,13 +1893,13 @@
                 <div className="flex bg-slate-900 min-h-screen relative overflow-x-hidden">
                     <Sidebar currentTab={tab} setTab={setTab} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} />
 
-                    <main className={`flex-grow transition-all duration-300 min-h-screen ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}>
+                    <main className={`flex-grow transition-all duration-300 min-h-screen ml-0 lg:ml-64`}>
                         {/* Persistent Header with Toggle */}
                         <div className="flex items-center justify-between p-4 glass sticky top-0 z-30">
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => setSidebarOpen(!sidebarOpen)}
-                                    className="p-2 glass rounded-lg text-white hover:bg-blue-600/20 transition-colors"
+                                    className="p-2 glass rounded-lg text-white hover:bg-blue-600/20 transition-colors lg:hidden"
                                     title={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
                                 >
                                     <Icon name={sidebarOpen ? "chevron-left" : "menu"} size={24} />
@@ -1289,6 +1922,8 @@
                         {tab === 'quoter' && <Quoter clients={clients} setClients={setClients} tenantId={tenantId} />}
                         {tab === 'prices' && <PriceList prices={prices} setPrices={setPrices} tenantId={tenantId} />}
                         {tab === 'suppliers' && <SupplierManager suppliers={suppliers} setSuppliers={setSuppliers} tenantId={tenantId} />}
+                        {tab === 'costs' && <OperativeCosts tenantId={tenantId} />}
+                        {tab === 'statistics' && <Statistics tenantId={tenantId} />}
 
                     </main>
                 </div>
