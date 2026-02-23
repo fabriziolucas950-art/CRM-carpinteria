@@ -1090,219 +1090,112 @@
             );
         };
 
-        const PriceList = ({ prices, setPrices, tenantId }) => {
-            const [localPrices, setLocalPrices] = useState(prices);
-            const [searchQuery, setSearchQuery] = useState('');
-            const [isLoading, setIsLoading] = useState(false);
-
-            useEffect(() => {
-                fetchPrices();
-            }, []);
-
-            // Sincronizar estado local con precios desde arriba si se actualiza externamente
-            useEffect(() => {
-                setLocalPrices(prices);
-            }, [prices]);
-
-            const fetchPrices = async () => {
-                setIsLoading(true);
-                try {
-                    const { data, error } = await window.supabaseClient
-                        .from('precios')
-                        .select('*')
-                        .order('category', { ascending: true });
-
-                    if (error) throw error;
-                    setPrices(data || []);
-                } catch (error) {
-                    console.error('Error al cargar precios:', error);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
-            const addRow = async () => {
-                try {
-                    const { data, error } = await window.supabaseClient
-                        .from('precios')
-                        .insert([
-                            {
-                                tenant_id: tenantId,
-                                category: 'Materia Prima',
-                                description: '',
-                                price: 0
-                            }
-                        ])
-                        .select();
-
-                    if (error) throw error;
-
-                    if (data && data.length > 0) {
-                        const updated = [...localPrices, data[0]];
-                        setLocalPrices(updated);
-                        setPrices(updated);
-                    }
-                } catch (error) {
-                    console.error('Error al agregar fila:', error);
-                    alert("Error al agregar fila: " + error.message);
-                }
-            };
-
-            const removeRow = async (id) => {
-                if (!confirm('¿Eliminar este producto de la lista?')) return;
-
-                try {
-                    const { error } = await window.supabaseClient
-                        .from('precios')
-                        .delete()
-                        .eq('id', id);
-
-                    if (error) throw error;
-
-                    const updated = localPrices.filter(p => p.id !== id);
-                    setLocalPrices(updated);
-                    setPrices(updated);
-                } catch (error) {
-                    console.error('Error al eliminar fila:', error);
-                    alert("Error al eliminar fila: " + error.message);
-                }
-            };
-
-            const updateField = (id, field, value) => {
-                // Actualiza solo localmente
-                setLocalPrices(localPrices.map(p => p.id === id ? { ...p, [field]: value } : p));
-            };
-
-            const saveChanges = async () => {
-                setIsLoading(true);
-                try {
-                    // Actualizamos cada ítem modificado
-                    for (const item of localPrices) {
-                        await window.supabaseClient
-                            .from('precios')
-                            .update({ category: item.category, description: item.description, price: item.price })
-                            .eq('id', item.id);
-                    }
-                    setPrices([...localPrices]);
-                    alert('¡Lista de precios guardada correctamente en Supabase!');
-                } catch (error) {
-                    console.error('Error al guardar cambios de precios:', error);
-                    alert("Error al guardar cambios: " + error.message);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
-            const filteredPrices = localPrices.filter(p =>
-                p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.category.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-
-            return (
-                <div className="p-4 md:p-8 pb-20">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                        <div>
-                            <h2 className="text-2xl md:text-3xl font-bold">Lista de Precios</h2>
-                            <p className="text-slate-400 text-sm mt-1">Gestión dinámica de productos y servicios</p>
-                        </div>
-                        <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                            <button onClick={saveChanges} disabled={isLoading} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-2 md:p-3 rounded-lg font-bold flex items-center justify-center gap-2 text-sm">
-                                <Icon name="save" size={18} /> {isLoading ? 'Guardando...' : 'Guardar Cambios'}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="glass p-6 rounded-2xl">
-                        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-                            <div className="relative w-full md:w-96">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                    <Icon name="search" size={16} />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Buscar producto..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 p-2 focus:ring-2 ring-blue-500 outline-none text-sm"
-                                />
-                            </div>
-                            <button onClick={addRow} className="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 text-sm transition-colors">
-                                <Icon name="plus" size={16} /> Agregar Producto
-                            </button>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-slate-700 text-xs uppercase text-slate-400">
-                                        <th className="p-3 font-semibold w-1/4">Categoría</th>
-                                        <th className="p-3 font-semibold w-1/2">Descripción</th>
-                                        <th className="p-3 font-semibold w-1/5 text-right">Precio Actual ($)</th>
-                                        <th className="p-3 font-semibold w-12 text-center"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredPrices.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="4" className="p-8 text-center text-slate-500 italic">
-                                                No hay productos en la lista. Haz clic en "Agregar Producto".
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredPrices.map((item) => (
-                                            <tr key={item.id} className="border-b border-slate-800/50 hover:bg-blue-600/5 group transition-colors">
-                                                <td className="p-2">
-                                                    <input
-                                                        type="text"
-                                                        value={item.category}
-                                                        onChange={(e) => updateField(item.id, 'category', e.target.value)}
-                                                        placeholder="Ej: Materia Prima"
-                                                        className="w-full bg-transparent border border-transparent hover:border-slate-700 focus:border-blue-500 rounded p-1 outline-none text-sm text-slate-300 transition-colors"
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <input
-                                                        type="text"
-                                                        value={item.description}
-                                                        onChange={(e) => updateField(item.id, 'description', e.target.value)}
-                                                        placeholder="Ej: Melamina Blanca 18mm"
-                                                        className="w-full bg-transparent border border-transparent hover:border-slate-700 focus:border-blue-500 rounded p-1 outline-none text-sm text-slate-200 transition-colors"
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <div className="flex items-center justify-end font-mono">
-                                                        <span className="text-slate-500 mr-1">$</span>
-                                                        <input
-                                                            type="number"
-                                                            value={item.price}
-                                                            onChange={(e) => updateField(item.id, 'price', e.target.value === '' ? '' : parseFloat(e.target.value))}
-                                                            className="w-full max-w-[120px] bg-transparent border border-transparent hover:border-slate-700 focus:border-blue-500 rounded p-1 outline-none text-sm text-blue-400 text-right transition-colors"
-                                                        />
-                                                    </div>
-                                                </td>
-                                                <td className="p-2 text-center">
-                                                    <button
-                                                        onClick={() => removeRow(item.id)}
-                                                        className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                                                        title="Eliminar fila"
-                                                    >
-                                                        <Icon name="trash-2" size={16} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
         const SupplierManager = ({ suppliers, setSuppliers, tenantId }) => {
             const [newSupplier, setNewSupplier] = useState({ name: '', phone: '', supplies: '' });
             const [isLoading, setIsLoading] = useState(false);
+            const [transactionModal, setTransactionModal] = useState({ isOpen: false, supplierId: null, type: 'DEUDA' });
+            const [transactionData, setTransactionData] = useState({ amount: '', desc: '', date: new Date().toISOString().split('T')[0], dueDate: '', receiptFile: null });
+            const [isSubmittingTx, setIsSubmittingTx] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [sortOption, setSortOption] = useState('recent');
+
+            const getSupplierTotalDebt = (s) => (s.debts || []).reduce((acc, d) => acc + d.amount, 0);
+
+            const getSupplierUrgency = (s) => {
+                if (!s.debts) return 0;
+                let isUrgent = 0;
+                s.debts.forEach(d => {
+                    if (d.dueDate && d.amount > 0) {
+                        const vto = new Date(d.dueDate);
+                        const today = new Date();
+                        const diffTime = vto - today;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        if (diffDays < 0) isUrgent = 2;
+                        else if (diffDays <= 7 && isUrgent < 2) isUrgent = 1;
+                    }
+                });
+                return isUrgent;
+            };
+
+            const filteredSuppliers = suppliers
+                .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || (s.supplies || '').toLowerCase().includes(searchTerm.toLowerCase()))
+                .sort((a, b) => {
+                    if (sortOption === 'debt_desc') {
+                        return getSupplierTotalDebt(b) - getSupplierTotalDebt(a);
+                    } else if (sortOption === 'vencid') {
+                        return getSupplierUrgency(b) - getSupplierUrgency(a);
+                    }
+                    return b.id - a.id;
+                });
+
+            const uploadSupplierReceipt = async (file, supplierId) => {
+                try {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${supplierId}-${Date.now()}.${fileExt}`;
+                    const filePath = `proveedores/${fileName}`;
+                    const { error: uploadError } = await window.supabaseClient.storage.from('archivos_crm').upload(filePath, file);
+                    if (uploadError) throw uploadError;
+                    const { data: { publicUrl } } = window.supabaseClient.storage.from('archivos_crm').getPublicUrl(filePath);
+                    return publicUrl;
+                } catch (error) {
+                    console.error("Error subiendo comprobante:", error);
+                    return null;
+                }
+            };
+
+            const handleTransactionSubmit = async (e) => {
+                e.preventDefault();
+                if (!transactionData.amount || isNaN(transactionData.amount)) return;
+                setIsSubmittingTx(true);
+                try {
+                    const s = suppliers.find(sup => sup.id === transactionModal.supplierId);
+                    if (!s) throw new Error("Proveedor no encontrado");
+
+                    let receiptUrl = null;
+                    if (transactionData.receiptFile) {
+                        receiptUrl = await uploadSupplierReceipt(transactionData.receiptFile, s.id);
+                    }
+
+                    const numAmount = transactionModal.type === 'PAGO' ? -Math.abs(parseFloat(transactionData.amount)) : Math.abs(parseFloat(transactionData.amount));
+                    const d_operacion = transactionData.date;
+                    const d_vencimiento = transactionData.dueDate || null;
+
+                    const { data: insertedTx, error: txError } = await window.supabaseClient.from('transacciones_proveedores').insert([{
+                        tenant_id: tenantId,
+                        supplier_id: s.id,
+                        tipo: transactionModal.type,
+                        monto: Math.abs(numAmount),
+                        descripcion: transactionData.desc || (transactionModal.type === 'DEUDA' ? "Nueva Deuda" : "Pago a Proveedor"),
+                        fecha_operacion: d_operacion,
+                        fecha_vencimiento: d_vencimiento,
+                        comprobante_url: receiptUrl
+                    }]).select();
+
+                    if (txError) throw txError;
+
+                    const newDebt = {
+                        id: insertedTx[0].id || Date.now(),
+                        amount: numAmount,
+                        desc: transactionData.desc || transactionModal.type,
+                        date: d_operacion,
+                        dueDate: d_vencimiento,
+                        receiptUrl: receiptUrl
+                    };
+                    const updatedArray = [...(s.debts || []), newDebt];
+
+                    const { error: updateError } = await window.supabaseClient.from('proveedores').update({ debts: updatedArray }).eq('id', s.id);
+                    if (updateError && !updateError.message.includes('column "debts" of relation "proveedores" does not exist')) throw updateError;
+
+                    const updated = suppliers.map(prov => prov.id === s.id ? { ...prov, debts: updatedArray } : prov);
+                    setSuppliers(updated);
+                    setTransactionModal({ isOpen: false, supplierId: null, type: 'DEUDA' });
+                    setTransactionData({ amount: '', desc: '', date: new Date().toISOString().split('T')[0], dueDate: '', receiptFile: null });
+                } catch (err) {
+                    alert("Error guardando transacción: " + err.message);
+                } finally {
+                    setIsSubmittingTx(false);
+                }
+            };
 
             useEffect(() => {
                 fetchSuppliers();
@@ -1383,86 +1276,41 @@
                         </div>
 
                         <div className="lg:col-span-2 space-y-4">
-                            {suppliers.length === 0 ? (
-                                <div className="glass p-10 rounded-2xl text-center text-slate-500">No hay proveedores registrados</div>
+                            {/* Filtros */}
+                            {(suppliers.length > 0 || searchTerm) && (
+                                <div className="glass p-4 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-center z-10 relative">
+                                    <div className="relative w-full xl:w-2/5">
+                                        <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar proveedor o insumo..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500 text-sm transition-colors text-white"
+                                        />
+                                    </div>
+                                    <div className="flex bg-slate-800/50 p-1.5 rounded-xl w-full xl:w-auto overflow-x-auto scroolbar-hide">
+                                        <button onClick={() => setSortOption('recent')} className={`whitespace-nowrap flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${sortOption === 'recent' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                            Recientes
+                                        </button>
+                                        <button onClick={() => setSortOption('debt_desc')} className={`whitespace-nowrap flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${sortOption === 'debt_desc' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                            Mayor Deuda
+                                        </button>
+                                        <button onClick={() => setSortOption('vencid')} className={`whitespace-nowrap flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${sortOption === 'vencid' ? 'bg-red-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                            Vencimientos
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {filteredSuppliers.length === 0 ? (
+                                <div className="glass p-10 rounded-2xl text-center text-slate-500">No hay proveedores registrados o coincidencias de búsqueda</div>
                             ) : (
-                                suppliers.map(s => {
+                                filteredSuppliers.map(s => {
                                     const totalDebt = (s.debts || []).reduce((acc, d) => acc + d.amount, 0);
 
-                                    const addDebt = async () => {
-                                        const amount = prompt("Ingrese monto a AÑADIR a la deuda (ej. 50000):", "");
-                                        if (amount === null || isNaN(amount) || amount === "") return;
-
-                                        const desc = prompt("Descripción de la deuda (opcional):", "Compra de mercadería");
-                                        const numAmount = parseFloat(amount);
-                                        const newDebt = { id: Date.now(), amount: numAmount, desc: desc || "Deuda", date: new Date().toLocaleDateString() };
-                                        const updatedArray = [...(s.debts || []), newDebt];
-
-                                        try {
-                                            // 1. Guardar en histórico para Estadísticas
-                                            await window.supabaseClient.from('transacciones_proveedores').insert([{
-                                                tenant_id: tenantId,
-                                                supplier_id: s.id,
-                                                tipo: 'DEUDA',
-                                                monto: numAmount,
-                                                descripcion: desc || "Deuda"
-                                            }]);
-
-                                            // 2. Guardar JSONB caché en proveedores para visualización en agenda
-                                            const { error } = await window.supabaseClient
-                                                .from('proveedores')
-                                                .update({ debts: updatedArray })
-                                                .eq('id', s.id);
-
-                                            // Fallback gracil por si la BD omite JSONB column, para que no explote
-                                            if (error && !error.message.includes('column "debts" of relation "proveedores" does not exist')) {
-                                                throw error;
-                                            }
-
-                                            const updated = suppliers.map(prov =>
-                                                prov.id === s.id ? { ...prov, debts: updatedArray } : prov
-                                            );
-                                            setSuppliers(updated);
-                                        } catch (e) {
-                                            alert("Error guardando deuda en BD: " + e.message);
-                                        }
-                                    };
-
-                                    const addPayment = async () => {
-                                        const amount = prompt(`Ingrese monto a PAGAR/DESCONTAR de la deuda:\n(Deuda actual: $${totalDebt.toLocaleString()})`, "");
-                                        if (amount === null || isNaN(amount) || amount === "") return;
-
-                                        const numAmount = Math.abs(parseFloat(amount));
-                                        const newDebt = { id: Date.now(), amount: -numAmount, desc: "Pago realizado a proveedor", date: new Date().toLocaleDateString() };
-                                        const updatedArray = [...(s.debts || []), newDebt];
-
-                                        try {
-                                            // 1. Guardar en histórico para Estadísticas
-                                            await window.supabaseClient.from('transacciones_proveedores').insert([{
-                                                tenant_id: tenantId,
-                                                supplier_id: s.id,
-                                                tipo: 'PAGO',
-                                                monto: numAmount,
-                                                descripcion: "Pago a proveedor"
-                                            }]);
-
-                                            // 2. Guardar JSONB caché en proveedores
-                                            const { error } = await window.supabaseClient
-                                                .from('proveedores')
-                                                .update({ debts: updatedArray })
-                                                .eq('id', s.id);
-
-                                            if (error && !error.message.includes('column "debts" of relation "proveedores" does not exist')) {
-                                                throw error;
-                                            }
-
-                                            const updated = suppliers.map(prov =>
-                                                prov.id === s.id ? { ...prov, debts: updatedArray } : prov
-                                            );
-                                            setSuppliers(updated);
-                                        } catch (e) {
-                                            alert("Error guardando pago en BD: " + e.message);
-                                        }
+                                    const openTransactionModal = (supplierId, type) => {
+                                        setTransactionModal({ isOpen: true, supplierId, type });
                                     };
 
                                     return (
@@ -1502,10 +1350,10 @@
                                                     </span>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                                                    <button onClick={addDebt} className="flex-1 md:flex-none bg-orange-500/20 text-orange-400 hover:bg-orange-500/40 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors flex items-center justify-center gap-2">
+                                                    <button onClick={() => openTransactionModal(s.id, 'DEUDA')} className="flex-1 md:flex-none bg-orange-500/20 text-orange-400 hover:bg-orange-500/40 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors flex items-center justify-center gap-2">
                                                         <Icon name="trending-up" size={14} /> Sumar Deuda
                                                     </button>
-                                                    <button onClick={addPayment} className="flex-1 md:flex-none bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors flex items-center justify-center gap-2">
+                                                    <button onClick={() => openTransactionModal(s.id, 'PAGO')} className="flex-1 md:flex-none bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors flex items-center justify-center gap-2">
                                                         <Icon name="trending-down" size={14} /> Registrar Pago
                                                     </button>
                                                 </div>
@@ -1514,18 +1362,27 @@
                                             {/* Optional Debt history list if any */}
                                             {(s.debts && s.debts.length > 0) && (
                                                 <div className="mt-4 pt-3 border-t border-slate-800">
-                                                    <div className="max-h-32 overflow-y-auto space-y-1 pr-2">
-                                                        {s.debts.slice().reverse().map(d => (
-                                                            <div key={d.id} className="flex justify-between items-center text-xs p-1.5 hover:bg-slate-800/50 rounded">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-slate-500 font-mono text-[10px]">{d.date}</span>
-                                                                    <span className="text-slate-300">{d.desc}</span>
+                                                    <div className="max-h-32 overflow-y-auto space-y-1 pr-2 mt-2">
+                                                        {s.debts.slice().reverse().map((d, index) => {
+                                                            const isOverdue = d.dueDate && new Date(d.dueDate) < new Date() && d.amount > 0;
+                                                            // Split date object safely
+                                                            const displayDate = d.date.includes('-') ? d.date.split('-').reverse().join('/') : d.date;
+                                                            return (
+                                                                <div key={d.id || index} className="flex justify-between items-center text-xs p-2 hover:bg-slate-800/50 rounded-lg group transition-colors">
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-slate-500 font-mono text-[10px]">{displayDate}</span>
+                                                                            <span className="text-slate-300 font-medium">{d.desc}</span>
+                                                                            {d.receiptUrl && <a href={d.receiptUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 ml-1 bg-blue-500/10 p-1 rounded transition-colors" title="Ver comprobante"><Icon name="paperclip" size={12} /></a>}
+                                                                        </div>
+                                                                        {d.dueDate && d.amount > 0 && <span className={`text-[9px] font-bold uppercase ${isOverdue ? 'text-red-400 bg-red-400/10' : 'text-orange-400/80 bg-orange-400/10'} px-1.5 py-0.5 rounded w-fit`}>Vto: {d.dueDate.split('-').reverse().join('/')}</span>}
+                                                                    </div>
+                                                                    <span className={`font-mono font-bold text-sm ${d.amount > 0 ? 'text-orange-400' : 'text-emerald-400'}`}>
+                                                                        {d.amount > 0 ? '+' : ''}{d.amount.toLocaleString()}
+                                                                    </span>
                                                                 </div>
-                                                                <span className={`font-mono font-bold ${d.amount > 0 ? 'text-orange-400' : 'text-emerald-400'}`}>
-                                                                    {d.amount > 0 ? '+' : ''}{d.amount.toLocaleString()}
-                                                                </span>
-                                                            </div>
-                                                        ))}
+                                                            )
+                                                        })}
                                                     </div>
                                                 </div>
                                             )}
@@ -1535,6 +1392,55 @@
                             )}
                         </div>
                     </div>
+
+                    {/* Modal Transacción Proveedor */}
+                    {transactionModal.isOpen && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                            <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl">
+                                <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${transactionModal.type === 'DEUDA' ? 'text-orange-400' : 'text-emerald-400'}`}>
+                                    <Icon name={transactionModal.type === 'DEUDA' ? 'trending-up' : 'trending-down'} />
+                                    {transactionModal.type === 'DEUDA' ? 'Facturación / Nueva Deuda' : 'Pago Emitido'}
+                                </h3>
+                                <form onSubmit={handleTransactionSubmit} className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Concepto</label>
+                                            <input type="text" value={transactionData.desc} onChange={e => setTransactionData({ ...transactionData, desc: e.target.value })} className="w-full bg-slate-800 border border-transparent rounded-lg p-3 outline-none focus:border-blue-500 text-white text-sm" placeholder={transactionModal.type === 'DEUDA' ? 'Ej: Fact. A-001' : 'Ej: Transf. BBVA'} />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Monto ($)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
+                                                <input type="number" step="0.01" value={transactionData.amount} onChange={e => setTransactionData({ ...transactionData, amount: e.target.value })} className="w-full bg-slate-800 border border-transparent rounded-lg p-3 pl-7 outline-none focus:border-blue-500 font-mono font-bold text-white text-right text-sm" required placeholder="0.00" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Fecha Op.</label>
+                                            <input type="date" value={transactionData.date} onChange={e => setTransactionData({ ...transactionData, date: e.target.value })} className="w-full bg-slate-800 border border-transparent rounded-lg p-2.5 outline-none focus:border-blue-500 text-slate-300 text-sm" required />
+                                        </div>
+                                        {transactionModal.type === 'DEUDA' ? (
+                                            <div>
+                                                <label className="text-xs uppercase text-slate-400 block mb-1">Vencimiento <span className="text-[9px] opacity-70">(Opcional)</span></label>
+                                                <input type="date" value={transactionData.dueDate} onChange={e => setTransactionData({ ...transactionData, dueDate: e.target.value })} className="w-full bg-slate-800 border border-transparent rounded-lg p-2.5 outline-none focus:border-orange-500/50 text-orange-200/80 text-sm" />
+                                            </div>
+                                        ) : <div></div>}
+                                    </div>
+                                    <div>
+                                        <label className="text-xs uppercase text-slate-400 block mb-1">Comprobante / Archivo <span className="text-[9px] opacity-70">(Opcional)</span></label>
+                                        <input type="file" onChange={e => setTransactionData({ ...transactionData, receiptFile: e.target.files[0] })} className="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30 file:transition-colors bg-slate-800 rounded-lg pr-3" />
+                                    </div>
+                                    <div className="flex gap-3 pt-4 border-t border-slate-800 mt-6">
+                                        <button type="button" onClick={() => setTransactionModal({ isOpen: false, supplierId: null, type: 'DEUDA' })} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl font-bold transition-colors" disabled={isSubmittingTx}>Cancelar</button>
+                                        <button type="submit" disabled={isSubmittingTx} className={`flex-1 p-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 transition-colors ${transactionModal.type === 'DEUDA' ? 'bg-orange-600 hover:bg-orange-500' : 'bg-emerald-600 hover:bg-emerald-500'} disabled:opacity-50`}>
+                                            {isSubmittingTx ? <><Icon name="loader" size={18} className="animate-spin" /> Guardando...</> : <><Icon name="save" size={18} /> Guardar Movimiento</>}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -1866,6 +1772,242 @@
             );
         };
 
+        const PriceList = ({ tenantId }) => {
+            const [items, setItems] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+            const [isSaving, setIsSaving] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [sortOrder, setSortOrder] = useState('asc');
+
+            useEffect(() => {
+                if (!tenantId) return;
+                const fetchItems = async () => {
+                    setIsLoading(true);
+                    try {
+                        const { data, error } = await window.supabaseClient
+                            .from('insumos_precios')
+                            .select('*')
+                            .eq('tenant_id', tenantId);
+                        if (error) throw error;
+                        setItems(data.map(d => ({ ...d, _localId: d.id })));
+                    } catch (err) {
+                        console.error("Fetch error", err);
+                        alert("Error al cargar lista de precios.");
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+                fetchItems();
+            }, [tenantId]);
+
+            const handleAddRow = () => {
+                const newRow = {
+                    id: null,
+                    _localId: Date.now().toString(),
+                    tenant_id: tenantId,
+                    proveedor: '',
+                    producto: '',
+                    unidad_compra: '',
+                    cantidad: 1,
+                    precio_unidad: 0,
+                    precio_total: 0
+                };
+                setItems([...items, newRow]);
+            };
+
+            const handleChange = (localId, field, value) => {
+                setItems(items.map(item => item._localId === localId ? { ...item, [field]: value } : item));
+            };
+
+            const handleDeleteRow = async (localId, dbId) => {
+                if (dbId) {
+                    if (!confirm("¿Eliminar este insumo de la base de datos?")) return;
+                    try {
+                        const { error } = await window.supabaseClient.from('insumos_precios').delete().eq('id', dbId);
+                        if (error) throw error;
+                    } catch (err) {
+                        console.error(err);
+                        alert("Error al eliminar");
+                        return;
+                    }
+                }
+                setItems(items.filter(item => item._localId !== localId));
+            };
+
+            const handleSave = async () => {
+                setIsSaving(true);
+                try {
+                    const toUpdate = [];
+                    const toInsert = [];
+
+                    items.forEach(item => {
+                        const payload = {
+                            tenant_id: tenantId,
+                            proveedor: item.proveedor,
+                            producto: item.producto,
+                            unidad_compra: item.unidad_compra,
+                            cantidad: Number(item.cantidad) || 1,
+                            precio_unidad: Number(item.precio_unidad) || 0,
+                            precio_total: Number(item.precio_total) || 0
+                        };
+                        if (item.id) {
+                            payload.id = item.id;
+                            toUpdate.push(payload);
+                        } else {
+                            toInsert.push(payload);
+                        }
+                    });
+
+                    if (toUpdate.length > 0) {
+                        const { error } = await window.supabaseClient.from('insumos_precios').upsert(toUpdate, { onConflict: 'id' });
+                        if (error) throw error;
+                    }
+                    if (toInsert.length > 0) {
+                        const { error } = await window.supabaseClient.from('insumos_precios').insert(toInsert);
+                        if (error) throw error;
+                    }
+
+                    const { data, error: fetchError } = await window.supabaseClient
+                        .from('insumos_precios')
+                        .select('*')
+                        .eq('tenant_id', tenantId);
+
+                    if (fetchError) throw fetchError;
+
+                    setItems(data.map(d => ({ ...d, _localId: d.id })));
+                    alert("Cambios guardados correctamente.");
+                } catch (err) {
+                    console.error(err);
+                    alert("Error al guardar cambios: " + err.message);
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            const filteredItems = items
+                .filter(item => {
+                    const search = searchTerm.toLowerCase();
+                    return (item.proveedor || '').toLowerCase().includes(search) ||
+                        (item.producto || '').toLowerCase().includes(search);
+                })
+                .sort((a, b) => {
+                    if (sortOrder === 'asc') return (a.precio_unidad || 0) - (b.precio_unidad || 0);
+                    return (b.precio_unidad || 0) - (a.precio_unidad || 0);
+                });
+
+            return (
+                <div className="p-4 md:p-8 pb-20">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 className="text-2xl md:text-3xl font-bold text-blue-400 flex items-center gap-3">
+                            <Icon name="list" size={28} /> Lista de Precios
+                        </h2>
+                        <div className="flex gap-2">
+                            <button onClick={handleAddRow} className="bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors">
+                                <Icon name="plus" size={16} /> Agregar Producto
+                            </button>
+                            <button onClick={handleSave} disabled={isSaving || isLoading} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50">
+                                {isSaving ? <Icon name="loader" className="animate-spin" size={16} /> : <Icon name="save" size={16} />}
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <div className="relative flex-grow max-w-md">
+                            <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por Proveedor o Producto..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-800 border-none rounded-lg pl-10 p-3 focus:ring-2 ring-blue-500 outline-none text-slate-200"
+                            />
+                        </div>
+                        <select
+                            value={sortOrder}
+                            onChange={e => setSortOrder(e.target.value)}
+                            className="bg-slate-800 border-none rounded-lg p-3 text-slate-200 focus:ring-2 ring-blue-500 outline-none cursor-pointer"
+                        >
+                            <option value="asc">Menor a Mayor (Precio Unit.)</option>
+                            <option value="desc">Mayor a Menor (Precio Unit.)</option>
+                        </select>
+                    </div>
+
+                    <div className="glass rounded-xl overflow-hidden overflow-x-auto border border-slate-700/50">
+                        {isLoading ? (
+                            <div className="p-8 text-center text-slate-400">
+                                <Icon name="loader" size={32} className="animate-spin mx-auto mb-2 opacity-50" />
+                                Cargando insumos...
+                            </div>
+                        ) : (
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-800/50 border-b border-slate-700 text-[10px] uppercase text-slate-400 font-bold tracking-wider">
+                                        <th className="p-3 whitespace-nowrap">Proveedor</th>
+                                        <th className="p-3 whitespace-nowrap">Producto</th>
+                                        <th className="p-3 whitespace-nowrap">Unidad Compra</th>
+                                        <th className="p-3 text-right whitespace-nowrap">Cantidad</th>
+                                        <th className="p-3 text-right whitespace-nowrap">Precio x Unidad</th>
+                                        <th className="p-3 text-right whitespace-nowrap">Precio Total</th>
+                                        <th className="p-3 text-center w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/50 text-sm">
+                                    {filteredItems.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="8" className="p-6 text-center text-slate-500 italic">No hay productos en la lista.</td>
+                                        </tr>
+                                    ) : filteredItems.map((item, idx) => {
+                                        return (
+                                            <tr key={item._localId || idx} className="hover:bg-slate-800/30 transition-colors group">
+                                                <td className="p-2">
+                                                    <input type="text" value={item.proveedor} onChange={e => handleChange(item._localId, 'proveedor', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors text-xs" placeholder="Lupo..." />
+                                                </td>
+                                                <td className="p-2 min-w-[200px]">
+                                                    <input type="text" value={item.producto} onChange={e => handleChange(item._localId, 'producto', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors font-medium text-xs" placeholder="Melamina Blanca..." />
+                                                </td>
+                                                <td className="p-2">
+                                                    <input type="text" value={item.unidad_compra} onChange={e => handleChange(item._localId, 'unidad_compra', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-400 focus:bg-slate-800 transition-colors text-[10px]" placeholder="Placa 18mm..." />
+                                                </td>
+                                                <td className="p-2 w-24">
+                                                    <input type="number" step="0.01" min="0" value={item.cantidad} onChange={e => handleChange(item._localId, 'cantidad', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-300 focus:bg-slate-800 transition-colors text-right font-mono text-xs" />
+                                                </td>
+                                                <td className="p-2 w-32">
+                                                    <div className="relative">
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                                        <input type="number" step="0.01" min="0" value={item.precio_unidad} onChange={e => handleChange(item._localId, 'precio_unidad', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 pl-5 outline-none text-white focus:bg-slate-800 transition-colors text-right font-mono font-bold text-xs" />
+                                                    </div>
+                                                </td>
+                                                <td className="p-2 w-32">
+                                                    <div className="relative">
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                                        <input type="number" step="0.01" min="0" value={item.precio_total} onChange={e => handleChange(item._localId, 'precio_total', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 pl-5 outline-none text-indigo-300 focus:bg-slate-800 transition-colors text-right font-mono font-bold text-xs" />
+                                                    </div>
+                                                </td>
+                                                <td className="p-2 text-center">
+                                                    <button onClick={() => handleDeleteRow(item._localId, item.id)} className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors opacity-0 group-hover:opacity-100" title="Eliminar Insumo">
+                                                        <Icon name="trash-2" size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+
+                    <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] text-slate-500 gap-2">
+                        <p className="flex items-center gap-1.5 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                            <Icon name="info" size={14} className="text-blue-400 shrink-0" />
+                            <span>El cuadro soporta guardar insumos unitarios o por cantidad total según tus necesidades manuales.</span>
+                        </p>
+                        <p className="font-bold border border-slate-700/50 px-3 py-1.5 rounded-lg">Total insumos: <span className="text-blue-400">{items.length}</span></p>
+                    </div>
+                </div>
+            );
+        };
+
         // --- Main App ---
         const App = () => {
             const [session, setSession] = useState(null);
@@ -1881,18 +2023,6 @@
                     return saved ? JSON.parse(saved) : [];
                 } catch { return []; }
             });
-            const [prices, setPrices] = useState(() => {
-                const defaultPrices = [
-                    { id: 1, category: 'Materia Prima', description: 'Placa Melamina Blanca 18mm (1.83x2.75)', price: 35000 },
-                    { id: 2, category: 'Herrajes', description: 'Bisagra Cazoleta 35mm Codo 0', price: 850 },
-                    { id: 3, category: 'Servicios', description: 'Corte por pieza', price: 300 }
-                ];
-                try {
-                    const saved = localStorage.getItem('fabrizio_prices');
-                    const parsed = saved ? JSON.parse(saved) : null;
-                    return (parsed && Array.isArray(parsed)) ? parsed : defaultPrices;
-                } catch { return defaultPrices; }
-            });
             const [suppliers, setSuppliers] = useState(() => {
                 try {
                     const saved = localStorage.getItem('fabrizio_suppliers');
@@ -1903,10 +2033,6 @@
             useEffect(() => {
                 localStorage.setItem('fabrizio_clients', JSON.stringify(clients));
             }, [clients]);
-
-            useEffect(() => {
-                localStorage.setItem('fabrizio_prices', JSON.stringify(prices));
-            }, [prices]);
 
             useEffect(() => {
                 localStorage.setItem('fabrizio_suppliers', JSON.stringify(suppliers));
@@ -2000,7 +2126,7 @@
 
                         {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} tenantId={tenantId} />}
                         {tab === 'quoter' && <Quoter clients={clients} setClients={setClients} tenantId={tenantId} />}
-                        {tab === 'prices' && <PriceList prices={prices} setPrices={setPrices} tenantId={tenantId} />}
+                        {tab === 'prices' && <PriceList tenantId={tenantId} />}
                         {tab === 'suppliers' && <SupplierManager suppliers={suppliers} setSuppliers={setSuppliers} tenantId={tenantId} />}
                         {tab === 'costs' && <OperativeCosts tenantId={tenantId} />}
                         {tab === 'statistics' && <Statistics tenantId={tenantId} />}
