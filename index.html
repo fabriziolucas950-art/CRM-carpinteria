@@ -1118,12 +1118,26 @@
             };
 
             const filteredSuppliers = suppliers
-                .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || (s.supplies || '').toLowerCase().includes(searchTerm.toLowerCase()))
+                .filter(s => {
+                    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || (s.supplies || '').toLowerCase().includes(searchTerm.toLowerCase());
+                    if (!matchesSearch) return false;
+
+                    if (sortOption === 'debt_desc') {
+                        return getSupplierTotalDebt(s) > 0;
+                    } else if (sortOption === 'vencid') {
+                        return getSupplierUrgency(s) > 0;
+                    }
+                    return true;
+                })
                 .sort((a, b) => {
                     if (sortOption === 'debt_desc') {
-                        return getSupplierTotalDebt(b) - getSupplierTotalDebt(a);
+                        const diff = getSupplierTotalDebt(b) - getSupplierTotalDebt(a);
+                        if (diff !== 0) return diff;
                     } else if (sortOption === 'vencid') {
-                        return getSupplierUrgency(b) - getSupplierUrgency(a);
+                        const urgDiff = getSupplierUrgency(b) - getSupplierUrgency(a);
+                        if (urgDiff !== 0) return urgDiff;
+                        const debtDiff = getSupplierTotalDebt(b) - getSupplierTotalDebt(a);
+                        if (debtDiff !== 0) return debtDiff;
                     }
                     return b.id - a.id;
                 });
