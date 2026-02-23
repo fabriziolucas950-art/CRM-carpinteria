@@ -251,6 +251,12 @@
                 const { client, budget, amount, method } = paymentModal;
                 const numAmount = parseFloat(amount);
                 const newPaid = (budget.paid || 0) + numAmount;
+                const newHistoryItem = {
+                    date: new Date().toISOString(),
+                    amount: numAmount,
+                    method: method
+                };
+                const newPaymentHistory = [...(budget.payment_history || []), newHistoryItem];
 
                 try {
                     await window.supabaseClient.from('transacciones_clientes').insert([{
@@ -263,7 +269,7 @@
 
                     const { error } = await window.supabaseClient
                         .from('presupuestos')
-                        .update({ paid: newPaid })
+                        .update({ paid: newPaid, payment_history: newPaymentHistory })
                         .eq('id', budget.id);
 
                     if (error) throw error;
@@ -273,7 +279,7 @@
                             return {
                                 ...c,
                                 budgets: c.budgets.map(b =>
-                                    b.id === budget.id ? { ...b, paid: newPaid } : b
+                                    b.id === budget.id ? { ...b, paid: newPaid, payment_history: newPaymentHistory } : b
                                 )
                             };
                         }
