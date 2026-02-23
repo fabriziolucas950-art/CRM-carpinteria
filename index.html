@@ -168,6 +168,7 @@
             const [isLoading, setIsLoading] = useState(false);
             const [editingClient, setEditingClient] = useState(null);
             const [editingBudget, setEditingBudget] = useState(null);
+            const [paymentModal, setPaymentModal] = useState(null);
 
             // Cargar clientes desde Supabase al montar el componente
             useEffect(() => {
@@ -240,6 +241,51 @@
                 } catch (error) {
                     console.error('Error al eliminar cliente:', error);
                     alert("Error al eliminar en Supabase: " + error.message);
+                }
+            };
+
+            const handleAddPayment = async (e) => {
+                e.preventDefault();
+                if (!paymentModal.amount || isNaN(paymentModal.amount)) return;
+                setIsLoading(true);
+                const { client, budget, amount, method } = paymentModal;
+                const numAmount = parseFloat(amount);
+                const newPaid = (budget.paid || 0) + numAmount;
+
+                try {
+                    await window.supabaseClient.from('transacciones_clientes').insert([{
+                        tenant_id: tenantId,
+                        client_id: client.id,
+                        tipo: 'COBRO',
+                        monto: numAmount,
+                        descripcion: `Pago sobre Presupuesto: ${budget.summary} (${method})`
+                    }]);
+
+                    const { error } = await window.supabaseClient
+                        .from('presupuestos')
+                        .update({ paid: newPaid })
+                        .eq('id', budget.id);
+
+                    if (error) throw error;
+
+                    const updated = clients.map(c => {
+                        if (c.id === client.id) {
+                            return {
+                                ...c,
+                                budgets: c.budgets.map(b =>
+                                    b.id === budget.id ? { ...b, paid: newPaid } : b
+                                )
+                            };
+                        }
+                        return c;
+                    });
+                    setClients(updated);
+                    setPaymentModal(null);
+                } catch (error) {
+                    console.error('Error adding payment:', error);
+                    alert("Error al procesar pago: " + error.message);
+                } finally {
+                    setIsLoading(false);
                 }
             };
 
@@ -444,47 +490,8 @@
                                                             const balance = b.total - paid;
                                                             const isFullyPaid = balance <= 0;
 
-                                                            const addPayment = async () => {
-                                                                const amount = prompt(`Ingrese monto cobrado para: ${b.summary}\nSaldo pendiente: $${balance.toLocaleString()}`, "0");
-                                                                if (amount === null || isNaN(amount) || amount === "") return;
-
-                                                                const numAmount = parseFloat(amount);
-                                                                const newPaid = (b.paid || 0) + numAmount;
-
-                                                                try {
-                                                                    // 1. Guardar en tabla transacciones_clientes (Para Estadisticas/Flujo Caja)
-                                                                    await window.supabaseClient.from('transacciones_clientes').insert([{
-                                                                        tenant_id: tenantId,
-                                                                        client_id: c.id,
-                                                                        tipo: 'COBRO',
-                                                                        monto: numAmount,
-                                                                        descripcion: `Pago sobre Presupuesto: ${b.summary}`
-                                                                    }]);
-
-                                                                    // 2. Actualizar cache visual en tabla presupuestos (Para la Vista de Clientes)
-                                                                    const { error } = await window.supabaseClient
-                                                                        .from('presupuestos')
-                                                                        .update({ paid: newPaid })
-                                                                        .eq('id', b.id);
-
-                                                                    if (error) throw error;
-
-                                                                    const updated = clients.map(client => {
-                                                                        if (client.id === c.id) {
-                                                                            return {
-                                                                                ...client,
-                                                                                budgets: client.budgets.map(bud =>
-                                                                                    bud.id === b.id ? { ...bud, paid: newPaid } : bud
-                                                                                )
-                                                                            };
-                                                                        }
-                                                                        return client;
-                                                                    });
-                                                                    setClients(updated);
-                                                                } catch (error) {
-                                                                    console.error("Error al actualizar pago:", error);
-                                                                    alert("Error al guardar pago en Supabase: " + error.message);
-                                                                }
+                                                            const openPaymentModal = () => {
+                                                                setPaymentModal({ client: c, budget: b, amount: "", method: "Efectivo" });
                                                             };
 
                                                             const updateBudgetStatus = async (newStatus) => {
@@ -574,7 +581,7 @@
                                                                             <button onClick={() => setEditingBudget({ ...b, client_id: c.id })} className="flex items-center gap-1.5 bg-slate-600/20 text-slate-400 hover:bg-slate-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1" title="Editar Presupuesto">
                                                                                 <Icon name="edit-2" size={12} /> Editar
                                                                             </button>
-                                                                            <button onClick={addPayment} className="flex items-center gap-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1">
+                                                                            <button onClick={openPaymentModal} className="flex items-center gap-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1">
                                                                                 <Icon name="plus" size={12} /> Pago
                                                                             </button>
                                                                         </div>
@@ -662,6 +669,56 @@
                             })()}
                         </div>
                     </div>
+
+                    {/* Payment Modal */}
+                    {paymentModal && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                            <div className="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl relative overflow-hidden flex flex-col">
+                                <div className="p-4 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/50">
+                                    <h3 className="font-bold text-lg text-white">Registrar Cobro</h3>
+                                    <button type="button" onClick={() => setPaymentModal(null)} className="text-slate-400 hover:text-white transition-colors">
+                                        <Icon name="x" size={20} />
+                                    </button>
+                                </div>
+                                <form onSubmit={handleAddPayment} className="p-5 space-y-4">
+                                    <p className="text-sm text-slate-300">
+                                        Abono para: <strong className="text-white">{paymentModal.budget.summary}</strong>
+                                    </p>
+                                    <div>
+                                        <label className="text-xs uppercase text-slate-400 block mb-1">Monto a cobrar ($)</label>
+                                        <input
+                                            required
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={paymentModal.amount}
+                                            onChange={e => setPaymentModal({ ...paymentModal, amount: e.target.value })}
+                                            className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none text-slate-200"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs uppercase text-slate-400 block mb-1">Método de Pago</label>
+                                        <select
+                                            required
+                                            value={paymentModal.method}
+                                            onChange={e => setPaymentModal({ ...paymentModal, method: e.target.value })}
+                                            className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none text-slate-200"
+                                        >
+                                            <option value="Efectivo">Efectivo</option>
+                                            <option value="Transferencia">Transferencia</option>
+                                            <option value="Cheque">Cheque</option>
+                                        </select>
+                                    </div>
+                                    <div className="pt-2">
+                                        <button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                            {isLoading ? <span className="animate-spin border-2 border-white/20 border-t-white rounded-full w-5 h-5"></span> : <><Icon name="check" size={18} /> Confirmar Pago</>}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Edit Client Modal */}
                     {
