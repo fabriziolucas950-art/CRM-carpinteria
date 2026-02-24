@@ -129,6 +129,9 @@
                     </div>
 
                     <nav className="space-y-2 flex-grow">
+                        <button onClick={() => { setTab('dashboard'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all ${currentTab === 'dashboard' ? 'active' : ''}`}>
+                            <Icon name="home" /> Inicio
+                        </button>
                         <button onClick={() => { setTab('clients'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all ${currentTab === 'clients' ? 'active' : ''}`}>
                             <Icon name="users" /> Clientes
                         </button>
@@ -160,6 +163,225 @@
 
         // --- Modules ---
 
+        const Dashboard = ({ tenantId, setTab }) => {
+            const [isLoading, setIsLoading] = useState(true);
+            const [stats, setStats] = useState({ totalGastos: 0, totalClientes: 0 });
+            const [alerts, setAlerts] = useState([]);
+
+            useEffect(() => {
+                const loadGlobalStats = async () => {
+                    if (!tenantId) return;
+                    setIsLoading(true);
+                    try {
+                        let newAlerts = [];
+
+                        // 1. Total Clientes & Alertas de Deudores
+                        const { data: clientesData, count: countClientes, error: errorClientes } = await window.supabaseClient
+                            .from('clientes')
+                            .select('id, name, budgets:presupuestos(total, paid, status)', { count: 'exact', head: false })
+                            .eq('tenant_id', tenantId);
+
+                        // 2. Total Gastos Operativos
+                        const { data: gastosData, error: errorGastos } = await window.supabaseClient
+                            .from('costos_operativos')
+                            .select('monto')
+                            .eq('tenant_id', tenantId);
+
+                        // 3. Proveedores & Alertas de Deudas
+                        const { data: proveedoresData, error: errorProveedores } = await window.supabaseClient
+                            .from('proveedores')
+                            .select('id, name, debts')
+                            .eq('tenant_id', tenantId);
+
+                        if (errorClientes) console.error("Error clientes:", errorClientes);
+                        if (errorGastos) console.error("Error gastos:", errorGastos);
+                        if (errorProveedores) console.error("Error proveedores:", errorProveedores);
+
+                        let sumGastos = 0;
+                        if (gastosData) {
+                            sumGastos = gastosData.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+                        }
+
+                        // Procesar Alertas = Clientes que deben
+                        if (clientesData) {
+                            clientesData.forEach(c => {
+                                if (c.budgets) {
+                                    let owed = 0;
+                                    c.budgets.forEach(b => {
+                                        if (b.status !== 'rechazado') {
+                                            const debt = (b.total || 0) - (b.paid || 0);
+                                            if (debt > 0) owed += debt;
+                                        }
+                                    });
+                                    if (owed > 0) {
+                                        newAlerts.push({
+                                            id: `client_${c.id}`,
+                                            type: 'client',
+                                            title: `Cobro Pendiente: ${c.name}`,
+                                            amount: owed,
+                                            icon: 'alert-circle',
+                                            color: 'text-orange-400',
+                                            bg: 'bg-orange-500/20',
+                                            border: 'border-orange-500/50',
+                                            actionTab: 'clients'
+                                        });
+                                    }
+                                }
+                            });
+                        }
+
+                        // Procesar Alertas = Deudas a Proveedores
+                        if (proveedoresData) {
+                            proveedoresData.forEach(p => {
+                                if (p.debts && p.debts.length > 0) {
+                                    const owedSup = p.debts.reduce((sum, d) => sum + (d.amount || 0), 0);
+                                    if (owedSup > 0) {
+                                        newAlerts.push({
+                                            id: `supplier_${p.id}`,
+                                            type: 'supplier',
+                                            title: `Pago Atrasado: ${p.name}`,
+                                            amount: owedSup,
+                                            icon: 'trending-down',
+                                            color: 'text-red-400',
+                                            bg: 'bg-red-500/20',
+                                            border: 'border-red-500/50',
+                                            actionTab: 'suppliers'
+                                        });
+                                    }
+                                }
+                            });
+                        }
+
+                        // Ordenar alertas por monto mayor a menor
+                        newAlerts.sort((a, b) => b.amount - a.amount);
+
+                        setStats({
+                            totalGastos: sumGastos,
+                            totalClientes: countClientes || 0
+                        });
+                        setAlerts(newAlerts);
+                    } catch (err) {
+                        console.error("Error global stats:", err);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+
+                loadGlobalStats();
+            }, [tenantId]);
+
+            return (
+                <div className="p-4 md:p-8 pb-20">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Resumen Principal</h2>
+                            <p className="text-slate-400 text-sm mt-1">Vista general del estado de tu negocio.</p>
+                        </div>
+                    </div>
+
+                    {isLoading ? (
+                        <div className="flex justify-center items-center py-20">
+                            <span className="animate-spin border-4 border-slate-700 border-t-blue-500 rounded-full w-12 h-12"></span>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+                                {/* KPI: Gastos Totales */}
+                                <div className="glass p-6 rounded-2xl relative overflow-hidden group">
+                                    <div className="absolute -right-6 -top-6 text-red-500/10 group-hover:text-red-500/20 transition-colors">
+                                        <Icon name="trending-down" size={120} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-3 bg-red-500/20 text-red-400 rounded-xl">
+                                                <Icon name="receipt" size={24} />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Gastos Operativos (Histórico)</h3>
+                                        </div>
+                                        <p className="text-4xl font-black text-slate-100 flex items-baseline gap-1">
+                                            <span className="text-xl text-red-400">$</span>
+                                            {stats.totalGastos.toLocaleString()}
+                                        </p>
+                                        <button onClick={() => setTab('costs')} className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1">Ver detalles <Icon name="arrow-right" size={14} /></button>
+                                    </div>
+                                </div>
+
+                                {/* KPI: Clientes Activos */}
+                                <div className="glass p-6 rounded-2xl relative overflow-hidden group">
+                                    <div className="absolute -right-6 -top-6 text-blue-500/10 group-hover:text-blue-500/20 transition-colors">
+                                        <Icon name="users" size={120} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl">
+                                                <Icon name="user-check" size={24} />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Clientes Registrados</h3>
+                                        </div>
+                                        <p className="text-4xl font-black text-slate-100">
+                                            {stats.totalClientes}
+                                        </p>
+                                        <button onClick={() => setTab('clients')} className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1">Gestionar cartera <Icon name="arrow-right" size={14} /></button>
+                                    </div>
+                                </div>
+
+                                {/* Acciones Rápidas */}
+                                <div className="glass p-6 rounded-2xl flex flex-col justify-center">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Acciones Rápidas</h3>
+                                    <div className="space-y-3">
+                                        <button onClick={() => setTab('quoter')} className="w-full bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/50 text-blue-400 p-3 rounded-xl flex justify-between items-center transition-colors font-bold">
+                                            <span>Generar Presupuesto</span>
+                                            <Icon name="plus-circle" size={18} />
+                                        </button>
+                                        <button onClick={() => setTab('costs')} className="w-full bg-orange-600/30 hover:bg-orange-600/50 border border-orange-500/50 text-orange-400 p-3 rounded-xl flex justify-between items-center transition-colors font-bold">
+                                            <span>Cargar Gasto Operativo</span>
+                                            <Icon name="dollar-sign" size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* Alertas */}
+                            <div className="glass p-6 rounded-2xl">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <Icon name="bell" className="text-yellow-400" />
+                                    <h3 className="text-lg font-bold text-slate-100 uppercase tracking-wider">Centro de Alertas ({alerts.length})</h3>
+                                </div>
+
+                                {alerts.length === 0 ? (
+                                    <div className="text-center py-10 bg-slate-800/30 rounded-xl border border-dashed border-slate-700">
+                                        <div className="text-slate-500 mb-2 flex justify-center"><Icon name="check-circle" size={32} /></div>
+                                        <p className="text-slate-400 font-medium">Todo al día. No hay alertas pendientes por resolver.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {alerts.map(alert => (
+                                            <div key={alert.id} className={`p-4 rounded-xl border ${alert.bg} ${alert.border} backdrop-blur-sm flex justify-between items-center group`}>
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`p-2 rounded-lg bg-slate-900/50 ${alert.color}`}>
+                                                        <Icon name={alert.icon} size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <span className={`block text-xs font-bold uppercase tracking-wider ${alert.color} mb-1`}>{alert.title}</span>
+                                                        <span className="block text-xl font-black text-slate-200">${alert.amount.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => setTab(alert.actionTab)} className={`opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg bg-slate-900/80 ${alert.color} hover:text-white`} title="Resolver">
+                                                    <Icon name="arrow-right" size={18} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )
+        };
+
 
         const ClientManager = ({ clients, setClients, tenantId }) => {
             const [newClient, setNewClient] = useState({ name: '', phone: '', address: '', city: '' });
@@ -189,7 +411,7 @@
                     setClients(data || []);
                 } catch (error) {
                     console.error('Error al cargar clientes:', error);
-                    alert("Error al cargar datos desde Supabase: " + error.message);
+                    window.addToast("Error al cargar datos desde Supabase: " + error.message, 'error');
                 } finally {
                     setIsLoading(false);
                 }
@@ -221,14 +443,14 @@
                     }
                 } catch (error) {
                     console.error('Error al agregar cliente:', error);
-                    alert("Error al guardar en Supabase: " + error.message);
+                    window.addToast("Error al guardar en Supabase: " + error.message, 'error');
                 } finally {
                     setIsLoading(false);
                 }
             };
 
             const deleteClient = async (id) => {
-                if (!confirm('¿Seguro que deseas eliminar este cliente permanentemente?')) return;
+                if (!(await window.confirmAsync('¿Seguro que deseas eliminar este cliente permanentemente?'))) return;
 
                 try {
                     const { error } = await window.supabaseClient
@@ -241,7 +463,7 @@
                     setClients(clients.filter(c => c.id !== id));
                 } catch (error) {
                     console.error('Error al eliminar cliente:', error);
-                    alert("Error al eliminar en Supabase: " + error.message);
+                    window.addToast("Error al eliminar en Supabase: " + error.message, 'error');
                 }
             };
 
@@ -290,7 +512,7 @@
                     setPaymentModal(null);
                 } catch (error) {
                     console.error('Error adding payment:', error);
-                    alert("Error al procesar pago: " + error.message);
+                    window.addToast("Error al procesar pago: " + error.message, 'error');
                 } finally {
                     setIsLoading(false);
                 }
@@ -316,7 +538,7 @@
                     setEditingClient(null);
                 } catch (error) {
                     console.error("Error updating client", error);
-                    alert("Error al actualizar cliente.");
+                    window.addToast("Error al actualizar cliente.", 'error');
                 } finally {
                     setIsLoading(false);
                 }
@@ -355,7 +577,7 @@
                     setEditingBudget(null);
                 } catch (error) {
                     console.error("Error updating budget", error);
-                    alert("Error al actualizar presupuesto.");
+                    window.addToast("Error al actualizar presupuesto.", 'error');
                 } finally {
                     setIsLoading(false);
                 }
@@ -515,7 +737,7 @@
                                                                     setClients(updated);
                                                                 } catch (error) {
                                                                     console.error("Error updating status", error);
-                                                                    alert("Error al actualizar estado: " + error.message);
+                                                                    window.addToast("Error al actualizar estado: " + error.message, 'error');
                                                                 }
                                                             };
 
@@ -536,7 +758,7 @@
                                                                 }
 
                                                                 try {
-                                                                    alert("Subiendo archivo a la nube, por favor espere...");
+                                                                    window.addToast("Subiendo archivo, espere...", 'info');
                                                                     const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
                                                                         .from('archivos_crm')
                                                                         .upload(fileName, file);
@@ -568,10 +790,10 @@
                                                                         budgets: client.budgets.map(bud => bud.id === b.id ? { ...bud, [type]: updatedFiles } : bud)
                                                                     } : client);
                                                                     setClients(updated);
-                                                                    alert("¡Archivo subido exitosamente!");
+                                                                    window.addToast("¡Archivo subido exitosamente!", 'success');
                                                                 } catch (error) {
                                                                     console.error("Error uploading file", error);
-                                                                    alert("Error al subir archivo: " + error.message);
+                                                                    window.addToast("Error al subir archivo: " + error.message, 'error');
                                                                 }
                                                             };
 
@@ -817,6 +1039,7 @@
             const [selectedClient, setSelectedClient] = useState(null);
             const [clientSearch, setClientSearch] = useState('');
             const [items, setItems] = useState([{ id: 1, desc: '', qty: 1, price: 0 }]);
+            const [vatRate, setVatRate] = useState(0);
 
             const addItem = () => setItems([...items, { id: Date.now(), desc: '', qty: 1, price: 0 }]);
             const removeItem = (id) => setItems(items.filter(i => i.id !== id));
@@ -824,7 +1047,8 @@
                 setItems(items.map(i => i.id === id ? { ...i, [field]: val } : i));
             };
 
-            const total = useMemo(() => items.reduce((acc, i) => acc + i.price, 0), [items]);
+            const subtotal = useMemo(() => items.reduce((acc, i) => acc + i.price, 0), [items]);
+            const total = useMemo(() => subtotal * (1 + vatRate), [subtotal, vatRate]);
 
             const generatePDF = () => {
                 const { jsPDF } = window.jspdf;
@@ -939,15 +1163,29 @@
                 });
 
                 // Total Section
-                const finalY = doc.lastAutoTable.finalY + 10;
+                let finalY = doc.lastAutoTable.finalY + 10;
+
+                if (vatRate > 0) {
+                    doc.setFontSize(10);
+                    doc.setTextColor(...accentColor);
+                    doc.setFont("helvetica", "normal");
+                    doc.text("Subtotal:", 140, finalY + 5);
+                    doc.text(`$ ${subtotal.toLocaleString()}`, 196, finalY + 5, { align: "right" });
+
+                    doc.text(`IVA (${(vatRate * 100).toFixed(1)}%):`, 140, finalY + 11);
+                    doc.text(`$ ${(subtotal * vatRate).toLocaleString()}`, 196, finalY + 11, { align: "right" });
+
+                    finalY += 16;
+                }
+
                 doc.setFillColor(241, 245, 249);
-                doc.rect(140, finalY, 56, 15, 'F');
+                doc.rect(130, finalY, 70, 15, 'F');
 
                 doc.setFontSize(12);
                 doc.setTextColor(...primaryColor);
                 doc.setFont("helvetica", "bold");
-                doc.text("TOTAL:", 145, finalY + 10);
-                doc.text(`$ ${total.toLocaleString()}`, 190, finalY + 10, { align: "right" });
+                doc.text("TOTAL FINAL:", 135, finalY + 10);
+                doc.text(`$ ${total.toLocaleString()}`, 196, finalY + 10, { align: "right" });
 
                 // Footer
                 doc.setFontSize(8);
@@ -961,14 +1199,15 @@
             };
 
             const shareWA = () => {
-                if (!selectedClient) return alert('Seleccione un cliente primero');
-                const text = `Hola ${selectedClient.name}, adjunto presupuesto de Fabrizio Amoblamientos.\n\nDetalle:\n${items.map(i => `- ${i.desc} (${i.qty}): $${i.price}`).join('\n')}\n\nTOTAL: $${total}\n\nQuedo atento a tus comentarios!`;
+                if (!selectedClient) return window.addToast('Seleccione un cliente primero', 'warning');
+                const ivaText = vatRate > 0 ? `Subtotal: $${subtotal.toLocaleString()}\nIVA (${(vatRate * 100).toFixed(1)}%): $${(subtotal * vatRate).toLocaleString()}\n` : '';
+                const text = `Hola ${selectedClient.name}, adjunto presupuesto de Fabrizio Amoblamientos.\n\nDetalle:\n${items.map(i => `- ${i.desc} (${i.qty}): $${i.price.toLocaleString()}`).join('\n')}\n\n${ivaText}TOTAL FINAL: $${total.toLocaleString()}\n\nQuedo atento a tus comentarios!`;
                 window.open(`https://wa.me/${selectedClient.phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`);
             };
 
             const registerInFile = async () => {
-                if (!selectedClient) return alert('Seleccione un cliente primero');
-                if (items.some(i => !i.desc)) return alert('Complete las descripciones de los items');
+                if (!selectedClient) return window.addToast('Seleccione un cliente primero', 'warning');
+                if (items.some(i => !i.desc)) return window.addToast('Complete las descripciones de los items', 'warning');
 
                 const summary = items.map(i => `${i.qty}x ${i.desc}`).join(', ').substring(0, 100) + (items.length > 2 ? '...' : '');
 
@@ -1005,10 +1244,10 @@
                     });
 
                     setClients(updatedClients);
-                    alert('¡Presupuesto guardado en Supabase y registrado en la ficha del cliente!');
+                    window.addToast('¡Presupuesto guardado y registrado!', 'success');
                 } catch (error) {
                     console.error('Error al guardar presupuesto:', error);
-                    alert("Error al guardar presupuesto: " + error.message);
+                    window.addToast("Error al guardar presupuesto: " + error.message, 'error');
                 }
             };
 
@@ -1063,11 +1302,31 @@
                                 )}
                             </div>
 
-                            <div className="glass p-6 rounded-2xl">
-                                <h3 className="font-semibold mb-2">Resumen</h3>
-                                <div className="flex justify-between text-2xl font-bold text-blue-400">
-                                    <span>Total:</span>
-                                    <span>${total.toLocaleString()}</span>
+                            <div className="glass p-6 rounded-2xl space-y-4">
+                                <h3 className="font-semibold text-slate-200">Resumen y Configuración</h3>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-400 block mb-2 font-bold tracking-wider">Tasa de IVA</label>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setVatRate(0)} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors ${vatRate === 0 ? 'bg-blue-600/40 text-blue-400 border border-blue-500/50' : 'bg-slate-800/50 text-slate-400 border border-transparent hover:bg-slate-800'}`}>0%</button>
+                                        <button onClick={() => setVatRate(0.105)} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors ${vatRate === 0.105 ? 'bg-blue-600/40 text-blue-400 border border-blue-500/50' : 'bg-slate-800/50 text-slate-400 border border-transparent hover:bg-slate-800'}`}>10.5%</button>
+                                        <button onClick={() => setVatRate(0.21)} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors ${vatRate === 0.21 ? 'bg-blue-600/40 text-blue-400 border border-blue-500/50' : 'bg-slate-800/50 text-slate-400 border border-transparent hover:bg-slate-800'}`}>21%</button>
+                                    </div>
+                                </div>
+                                <div className="pt-4 border-t border-slate-700/50">
+                                    <div className="flex justify-between text-sm text-slate-400 mb-2">
+                                        <span>Subtotal:</span>
+                                        <span>${subtotal.toLocaleString()}</span>
+                                    </div>
+                                    {vatRate > 0 && (
+                                        <div className="flex justify-between text-sm text-slate-400 mb-2">
+                                            <span>IVA ({(vatRate * 100).toFixed(1)}%):</span>
+                                            <span>${(subtotal * vatRate).toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-2xl font-bold text-blue-400 mt-2">
+                                        <span className="text-xl">Total:</span>
+                                        <span>${total.toLocaleString()}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1225,7 +1484,7 @@
                     setTransactionModal({ isOpen: false, supplierId: null, type: 'DEUDA' });
                     setTransactionData({ amount: '', desc: '', date: new Date().toISOString().split('T')[0], dueDate: '', receiptFile: null });
                 } catch (err) {
-                    alert("Error guardando transacción: " + err.message);
+                    window.addToast("Error al guardar transacción: " + err.message, 'error');
                 } finally {
                     setIsSubmittingTx(false);
                 }
@@ -1278,7 +1537,7 @@
                     }
                 } catch (error) {
                     console.error('Error al agregar proveedor:', error);
-                    alert("Error al guardar en Supabase: " + error.message);
+                    window.addToast("Error al guardar en Supabase: " + error.message, 'error');
                 } finally {
                     setIsLoading(false);
                 }
@@ -1365,11 +1624,11 @@
                                                     <a href={`tel:${s.phone.replace(/\D/g, '')}`} className="p-2 glass rounded-lg hover:bg-slate-500/20 text-slate-300" title="Llamar"><Icon name="phone" /></a>
                                                     <a href={`https://wa.me/${s.phone.replace(/\D/g, '')}`} target="_blank" className="p-2 glass rounded-lg hover:bg-green-500/20 text-green-400" title="WhatsApp"><Icon name="message-circle" /></a>
                                                     <button onClick={async () => {
-                                                        if (confirm('¿Eliminar proveedor?')) {
+                                                        if (await window.confirmAsync('¿Eliminar proveedor?')) {
                                                             try {
                                                                 await window.supabaseClient.from('proveedores').delete().eq('id', s.id);
                                                                 setSuppliers(suppliers.filter(prev => prev.id !== s.id));
-                                                            } catch (e) { alert("Error eliminando: " + e.message); }
+                                                            } catch (e) { window.addToast("Error eliminando: " + e.message, 'error'); }
                                                         }
                                                     }} className="p-2 glass rounded-lg hover:bg-red-500/20 text-red-400"><Icon name="trash-2" /></button>
                                                 </div>
@@ -1651,14 +1910,14 @@
                         setFormData({ ...formData, concepto: '', monto: '' });
                     }
                 } catch (err) {
-                    alert("Error guardando el egreso: " + err.message);
+                    window.addToast("Error al guardar egreso: " + err.message, 'error');
                 } finally {
                     setIsSubmitting(false);
                 }
             };
 
             const handleDelete = async (id) => {
-                if (!confirm("¿Deseas eliminar este registro de gasto de forma permanente?")) return;
+                if (!(await window.confirmAsync("¿Deseas eliminar este registro de gasto de forma permanente?"))) return;
                 try {
                     await window.supabaseClient.from('costos_operativos').delete().eq('id', id);
                     setCosts(costs.filter(c => c.id !== id));
@@ -2210,7 +2469,7 @@
                         setItems(data.map(d => ({ ...d, _localId: d.id })));
                     } catch (err) {
                         console.error("Fetch error", err);
-                        alert("Error al cargar lista de precios.");
+                        window.addToast("Error al cargar lista de precios.", 'error');
                     } finally {
                         setIsLoading(false);
                     }
@@ -2239,13 +2498,13 @@
 
             const handleDeleteRow = async (localId, dbId) => {
                 if (dbId) {
-                    if (!confirm("¿Eliminar este insumo de la base de datos?")) return;
+                    if (!(await window.confirmAsync("¿Eliminar este insumo de la base de datos?"))) return;
                     try {
                         const { error } = await window.supabaseClient.from('insumos_precios').delete().eq('id', dbId);
                         if (error) throw error;
                     } catch (err) {
                         console.error(err);
-                        alert("Error al eliminar");
+                        window.addToast("Error al eliminar", 'error');
                         return;
                     }
                 }
@@ -2293,10 +2552,10 @@
                     if (fetchError) throw fetchError;
 
                     setItems(data.map(d => ({ ...d, _localId: d.id })));
-                    alert("Cambios guardados correctamente.");
+                    window.addToast("Cambios guardados correctamente.", 'success');
                 } catch (err) {
                     console.error(err);
-                    alert("Error al guardar cambios: " + err.message);
+                    window.addToast("Error al guardar cambios: " + err.message, 'error');
                 } finally {
                     setIsSaving(false);
                 }
@@ -2426,13 +2685,114 @@
             );
         };
 
+        // --- Toast System ---
+        window.addToast = (message, type = 'info') => {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message, type } }));
+        };
+
+        const ToastContainer = () => {
+            const [toasts, setToasts] = useState([]);
+
+            useEffect(() => {
+                const handleShowToast = (e) => {
+                    const { message, type } = e.detail;
+                    const id = Date.now() + Math.random().toString(36).substr(2, 9);
+                    setToasts(prev => [...prev, { id, message, type }]);
+                    setTimeout(() => {
+                        setToasts(prev => prev.filter(t => t.id !== id));
+                    }, 4000);
+                };
+
+                window.addEventListener('show-toast', handleShowToast);
+                return () => window.removeEventListener('show-toast', handleShowToast);
+            }, []);
+
+            if (toasts.length === 0) return null;
+
+            const getIcon = (type) => {
+                switch (type) {
+                    case 'success': return 'check-circle';
+                    case 'error': return 'alert-circle';
+                    case 'warning': return 'alert-triangle';
+                    default: return 'info';
+                }
+            };
+
+            const getColor = (type) => {
+                switch (type) {
+                    case 'success': return 'bg-emerald-500/90 text-white border-emerald-400';
+                    case 'error': return 'bg-red-500/90 text-white border-red-400';
+                    case 'warning': return 'bg-orange-500/90 text-white border-orange-400';
+                    default: return 'bg-blue-500/90 text-white border-blue-400';
+                }
+            };
+
+            return (
+                <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 max-w-sm pointer-events-none">
+                    {toasts.map(toast => (
+                        <div key={toast.id} className={`p-4 rounded-xl border flex items-center gap-3 shadow-xl backdrop-blur-md transition-all animate-fade-in pointer-events-auto ${getColor(toast.type)}`}>
+                            <Icon name={getIcon(toast.type)} size={24} className="shrink-0" />
+                            <p className="font-bold text-[15px]">{toast.message}</p>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // --- Custom Confirm Dialog ---
+        window.confirmAsync = (message) => {
+            return new Promise((resolve) => {
+                window.dispatchEvent(new CustomEvent('show-confirm', { detail: { message, resolve } }));
+            });
+        };
+
+        const ConfirmDialog = () => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [message, setMessage] = useState('');
+            const [resolvePromise, setResolvePromise] = useState(null);
+
+            useEffect(() => {
+                const handleShow = (e) => {
+                    setMessage(e.detail.message);
+                    setResolvePromise(() => e.detail.resolve);
+                    setIsOpen(true);
+                };
+                window.addEventListener('show-confirm', handleShow);
+                return () => window.removeEventListener('show-confirm', handleShow);
+            }, []);
+
+            const handleConfirm = (value) => {
+                setIsOpen(false);
+                if (resolvePromise) resolvePromise(value);
+            };
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 z-[9980] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in pointer-events-auto">
+                    <div className="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center shadow-black overflow-hidden relative">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
+                        <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                            <Icon name="alert-triangle" size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">Confirmar Acción</h3>
+                        <p className="text-slate-400 mb-8">{message}</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => handleConfirm(false)} className="flex-1 px-4 py-3 rounded-xl font-bold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors">Cancelar</button>
+                            <button onClick={() => handleConfirm(true)} className="flex-1 px-4 py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-500/20 transition-all">Aceptar</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- Main App ---
         const App = () => {
             const [session, setSession] = useState(null);
             const [tenantId, setTenantId] = useState(null);
             const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-            const [tab, setTab] = useState('clients');
+            const [tab, setTab] = useState('dashboard');
             // Default open on desktop, closed on mobile
             const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
             const [clients, setClients] = useState(() => {
@@ -2496,7 +2856,7 @@
             };
 
             const handleLogout = async () => {
-                if (confirm('¿Seguro que deseas cerrar sesión?')) {
+                if (await window.confirmAsync('¿Seguro que deseas cerrar sesión?')) {
                     await window.supabaseClient.auth.signOut();
                 }
             };
@@ -2542,6 +2902,7 @@
                             </div>
                         </div>
 
+                        {tab === 'dashboard' && <Dashboard tenantId={tenantId} setTab={setTab} />}
                         {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} tenantId={tenantId} />}
                         {tab === 'quoter' && <Quoter clients={clients} setClients={setClients} tenantId={tenantId} />}
                         {tab === 'prices' && <PriceList tenantId={tenantId} />}
@@ -2550,6 +2911,8 @@
                         {tab === 'statistics' && <Statistics tenantId={tenantId} />}
 
                     </main>
+                    <ToastContainer />
+                    <ConfirmDialog />
                 </div>
             );
         };
