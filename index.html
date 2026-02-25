@@ -302,7 +302,7 @@
                                             <div className="p-3 bg-red-500/20 text-red-400 rounded-xl">
                                                 <Icon name="receipt" size={24} />
                                             </div>
-                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Gastos Operativos (HistÃ³rico)</h3>
+                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Gastos Operativos (Histórico)</h3>
                                         </div>
                                         <p className="text-4xl font-black text-slate-100 flex items-baseline gap-1">
                                             <span className="text-xl text-red-400">$</span>
@@ -471,7 +471,7 @@
             };
 
             const deleteClient = async (id) => {
-                if (!(await window.confirmAsync('Â¿Seguro que deseas eliminar este cliente permanentemente?'))) return;
+                if (!(await window.confirmAsync('¿Seguro que deseas eliminar este cliente permanentemente?'))) return;
 
                 try {
                     const { error } = await window.supabaseClient
@@ -815,7 +815,7 @@
                                                                             budgets: client.budgets.map(bud => bud.id === b.id ? { ...bud, [type]: updatedFiles } : bud)
                                                                         } : client);
                                                                         setClients(updated);
-                                                                        window.addToast("Â¡Archivo subido exitosamente!", 'success');
+                                                                        window.addToast("¡Archivo subido exitosamente!", 'success');
                                                                     } catch (error) {
                                                                         console.error("Error uploading file", error);
                                                                         window.addToast("Error al subir archivo: " + error.message, 'error');
@@ -1256,7 +1256,7 @@
                     if (error) throw error;
 
                     const newBudget = data[0];
-                    // Formatear la fecha para la visualizaciÃ³n local temporalmente
+                    // Formatear la fecha para la visualización local temporalmente
                     newBudget.date = new Date(newBudget.date).toLocaleString();
 
                     const updatedClients = clients.map(c => {
@@ -1270,7 +1270,7 @@
                     });
 
                     setClients(updatedClients);
-                    window.addToast('Â¡Presupuesto guardado y registrado!', 'success');
+                    window.addToast('¡Presupuesto guardado y registrado!', 'success');
                 } catch (error) {
                     console.error('Error al guardar presupuesto:', error);
                     window.addToast("Error al guardar presupuesto: " + error.message, 'error');
@@ -1322,14 +1322,14 @@
                                         <button onClick={() => { setSelectedClient(null); setClientSearch(''); }} className="absolute top-2 right-2 text-slate-500 hover:text-red-400 bg-slate-800 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" title="Limpiar">
                                             <Icon name="x" size={14} />
                                         </button>
-                                        <p className="flex items-center gap-2 mb-1"><Icon name="phone" size={14} className="text-blue-400" /> {selectedClient.phone || 'Sin telÃ©fono'}</p>
-                                        <p className="flex items-center gap-2"><Icon name="map-pin" size={14} className="text-orange-400" /> {selectedClient.address || 'Sin direcciÃ³n'}</p>
+                                        <p className="flex items-center gap-2 mb-1"><Icon name="phone" size={14} className="text-blue-400" /> {selectedClient.phone || 'Sin teléfono'}</p>
+                                        <p className="flex items-center gap-2"><Icon name="map-pin" size={14} className="text-orange-400" /> {selectedClient.address || 'Sin dirección'}</p>
                                     </div>
                                 )}
                             </div>
 
                             <div className="glass p-6 rounded-2xl space-y-4">
-                                <h3 className="font-semibold text-slate-200">Resumen y ConfiguraciÃ³n</h3>
+                                <h3 className="font-semibold text-slate-200">Resumen y Configuración</h3>
                                 <div>
                                     <label className="text-xs uppercase text-slate-400 block mb-2 font-bold tracking-wider">Tasa de IVA</label>
                                     <div className="flex gap-2">
@@ -1779,15 +1779,15 @@
                 setIsLoading(true);
 
                 try {
-                    // Iniciar SesiÃ³n (Ãšnica opciÃ³n)
+                    // Iniciar Sesión (Única opción)
                     const { data, error: authError } = await window.supabaseClient.auth.signInWithPassword({
                         email: email,
                         password: pass,
                     });
                     if (authError) throw authError;
-                    // App.js manejarÃ¡ el estado a travÃ©s del onAuthStateChange
+                    // App.js manejará el estado a través del onAuthStateChange
                 } catch (error) {
-                    // TraducciÃ³n bÃ¡sica de errores comunes
+                    // Traducción básica de errores comunes
                     let msg = error.message;
                     if (msg.includes("Invalid login credentials")) msg = "Credenciales incorrectas";
                     setError(msg);
@@ -1800,7 +1800,7 @@
                 <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
                     <div className="glass p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-700 relative overflow-hidden">
 
-                        {/* DecoraciÃ³n */}
+                        {/* Decoración */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
 
                         <div className="text-center mb-8">
@@ -1808,7 +1808,7 @@
                                 <Icon name="log-in" size={32} className="text-blue-400" />
                             </div>
                             <h2 className="text-2xl font-bold text-white tracking-tight">
-                                Iniciar SesiÃ³n
+                                Iniciar Sesión
                             </h2>
                             <p className="text-slate-400 text-sm mt-2">
                                 Ingresa tus datos para acceder a tu panel
@@ -2355,8 +2355,8 @@
                                     <Icon name={activeChart === 'FLUJO_CAJA' ? "activity" : activeChart === 'COSTOS' ? "bar-chart" : "pie-chart"} />
                                     {
                                         activeChart === 'FLUJO_CAJA' ? 'Flujo de Caja Mensual' :
-                                            activeChart === 'ADEUDADO' ? 'Efectividad de Cobro (HistÃ³rico)' :
-                                                activeChart === 'COBRADO' ? 'Efectividad de Cobro (HistÃ³rico)' :
+                                            activeChart === 'ADEUDADO' ? 'Efectividad de Cobro (Histórico)' :
+                                                activeChart === 'COBRADO' ? 'Efectividad de Cobro (Histórico)' :
                                                     activeChart === 'A_PAGAR' ? 'Liquidez (Cuentas a Cobrar vs A Pagar)' :
                                                         'Costos Operativos: Fijos vs Variables'
                                     }
@@ -3115,7 +3115,7 @@
                                 <button
                                     onClick={() => setSidebarOpen(!sidebarOpen)}
                                     className="p-2 glass rounded-lg text-white hover:bg-blue-600/20 transition-colors lg:hidden"
-                                    title={sidebarOpen ? "Cerrar menÃº" : "Abrir menÃº"}
+                                    title={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
                                 >
                                     <Icon name={sidebarOpen ? "chevron-left" : "menu"} size={24} />
                                 </button>
@@ -3149,7 +3149,7 @@
                                 <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-slate-400 gap-4">
                                     <Icon name="lock" size={48} className="text-slate-600" />
                                     <h2 className="text-xl font-bold">Acceso Restringido</h2>
-                                    <p>No tienes permisos suficientes para ver esta secciÃ³n.</p>
+                                    <p>No tienes permisos suficientes para ver esta sección.</p>
                                     <button onClick={() => setTab('dashboard')} className="mt-4 px-6 py-2 bg-blue-600 rounded-xl text-white font-bold">Volver al Inicio</button>
                                 </div>
                             )}
@@ -3180,8 +3180,8 @@
                 if (this.state.hasError) {
                     return (
                         <div className="bg-slate-900 text-white min-h-screen p-8">
-                            <h2 className="text-red-500 text-3xl font-bold mb-4">La aplicaciÃ³n ha crasheado ðŸ›‘</h2>
-                            <p className="text-slate-300 mb-4">Por favor envÃ­a una captura de esta pantalla al soporte tÃ©cnico:</p>
+                            <h2 className="text-red-500 text-3xl font-bold mb-4">La aplicación ha crasheado 🚀</h2>
+                            <p className="text-slate-300 mb-4">Por favor envía una captura de esta pantalla al soporte técnico:</p>
                             <div className="bg-slate-800 p-4 rounded text-sm font-mono overflow-auto mb-4 border border-red-500/50">
                                 <span className="text-red-400 font-bold block">{this.state.error && this.state.error.toString()}</span>
                                 <pre className="text-slate-400 mt-2">{this.state.errorInfo && this.state.errorInfo.componentStack}</pre>
@@ -3206,4 +3206,3 @@
 </body>
 
 </html>
-
