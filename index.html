@@ -14,7 +14,7 @@
     <!-- Dependencias obligatorias para Recharts -->
     <script src="https://unpkg.com/prop-types@15.8.1/prop-types.js"></script>
     <script src="https://unpkg.com/react-is@18.2.0/umd/react-is.production.min.js"></script>
-    <!-- Recharts (VersiÃ³n Fija Estable) -->
+    <!-- Recharts (Versión Fija Estable) -->
     <script src="https://unpkg.com/recharts@2.1.9/umd/Recharts.js"></script>
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -22,10 +22,10 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Supabase CDN y ConfiguraciÃ³n -->
+    <!-- Supabase CDN y Configuración -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Datos copiados de tÃº proyecto en Supabase
+        // Datos copiados de tú proyecto en Supabase
         const supabaseUrl = 'https://yjtljilaxvdescadkzqk.supabase.co';
         const supabaseKey = 'sb_publishable_Ik5EOjfzdK1wVYanYITuuw_bObZw1ak';
 
@@ -91,9 +91,9 @@
 
             useEffect(() => {
                 if (spanRef.current) {
-                    // Al usar innerHTML, ocultamos el <i> del control del Ã¡rbol de React.
-                    // Lucide transformarÃ¡ este <i> en un <svg> pero React sÃ³lo se preocuparÃ¡ de desmontar el <span> padre
-                    // Esto arregla el crasheo crÃ­ptico (NotFoundError: Failed to execute 'removeChild')
+                    // Al usar innerHTML, ocultamos el <i> del control del árbol de React.
+                    // Lucide transformará este <i> en un <svg> pero React sólo se preocupará de desmontar el <span> padre
+                    // Esto arregla el crasheo críptico (NotFoundError: Failed to execute 'removeChild')
                     spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className}" style="width: ${size}px; height: ${size}px;"></i>`;
                     lucide.createIcons();
                 }
@@ -111,7 +111,7 @@
                 { id: 'prices', label: 'Lista de Precios', icon: 'list', roles: ['admin', 'editor'] },
                 { id: 'suppliers', label: 'Proveedores', icon: 'truck', roles: ['admin', 'editor'] },
                 { id: 'costs', label: 'Costos Operativos', icon: 'receipt', roles: ['admin', 'editor'], special: true },
-                { id: 'statistics', label: 'EstadÃ­sticas', icon: 'pie-chart', roles: ['admin'], special: true },
+                { id: 'statistics', label: 'Estadísticas', icon: 'pie-chart', roles: ['admin'], special: true },
                 { id: 'users', label: 'Equipo', icon: 'user-cog', roles: ['admin'] }
             ];
 
@@ -333,9 +333,9 @@
                                     </div>
                                 </div>
 
-                                {/* Acciones RÃ¡pidas */}
+                                {/* Acciones Rápidas */}
                                 <div className="glass p-6 rounded-2xl flex flex-col justify-center">
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Acciones RÃ¡pidas</h3>
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Acciones Rápidas</h3>
                                     <div className="space-y-3">
                                         <button onClick={() => setTab('quoter')} className="w-full bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/50 text-blue-400 p-3 rounded-xl flex justify-between items-center transition-colors font-bold">
                                             <span>Generar Presupuesto</span>
@@ -360,7 +360,7 @@
                                 {alerts.length === 0 ? (
                                     <div className="text-center py-10 bg-slate-800/30 rounded-xl border border-dashed border-slate-700">
                                         <div className="text-slate-500 mb-2 flex justify-center"><Icon name="check-circle" size={32} /></div>
-                                        <p className="text-slate-400 font-medium">Todo al dÃ­a. No hay alertas pendientes por resolver.</p>
+                                        <p className="text-slate-400 font-medium">Todo al día. No hay alertas pendientes por resolver.</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -642,7 +642,7 @@
                                     <input value={newClient.phone} onChange={e => setNewClient({ ...newClient, phone: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="+54 9..." />
                                 </div>
                                 <div>
-                                    <label className="text-xs uppercase text-slate-400 block mb-1">DirecciÃ³n / Obra</label>
+                                    <label className="text-xs uppercase text-slate-400 block mb-1">Dirección / Obra</label>
                                     <input value={newClient.address} onChange={e => setNewClient({ ...newClient, address: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="Calle Falsa 123" />
                                 </div>
                                 <div>
@@ -651,7 +651,7 @@
                                         value={newClient.city}
                                         onChange={e => setNewClient({ ...newClient, city: e.target.value })}
                                         className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none"
-                                        placeholder="Ej: JunÃ­n"
+                                        placeholder="Ej: Junín"
                                     />
                                 </div>
                                 <button onClick={addClient} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
@@ -685,7 +685,7 @@
                                 }
 
                                 if (filteredClients.length === 0) {
-                                    return <div className="glass p-10 rounded-2xl text-center text-slate-500">NingÃºn cliente coincide con la bÃºsqueda '{searchTerm}'</div>;
+                                    return <div className="glass p-10 rounded-2xl text-center text-slate-500">Ningún cliente coincide con la búsqueda '{searchTerm}'</div>;
                                 }
 
                                 return filteredClients.map(c => {
@@ -775,11 +775,11 @@
 
                                                                     let note = '';
                                                                     if (type === 'plans') {
-                                                                        note = prompt("Â¿QuiÃ©n tomÃ³ las medidas? (Opcional, Ej: Carlos, Lucas, Cliente):", "");
-                                                                        if (note === null) return; // CancelÃ³
+                                                                        note = prompt("¿Quién tomó las medidas? (Opcional, Ej: Carlos, Lucas, Cliente):", "");
+                                                                        if (note === null) return; // Canceló
                                                                     } else if (type === 'receipts') {
-                                                                        note = prompt("AnotaciÃ³n para el comprobante (Opcional, Ej: SeÃ±a 50% Transferencia):", "");
-                                                                        if (note === null) return; // CancelÃ³
+                                                                        note = prompt("Anotación para el comprobante (Opcional, Ej: Seña 50% Transferencia):", "");
+                                                                        if (note === null) return; // Canceló
                                                                     }
 
                                                                     try {
@@ -913,7 +913,7 @@
 
                                                                                 {(b.plans && b.plans.length > 0) && (
                                                                                     <div className="space-y-1 mt-1">
-                                                                                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Planos y DiseÃ±os</span>
+                                                                                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Planos y Diseños</span>
                                                                                         <div className="flex flex-col gap-1.5">
                                                                                             {b.plans.map((p, i) => (
                                                                                                 <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[10px] text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 p-2 rounded-lg border border-purple-500/20 transition-colors">
@@ -969,7 +969,7 @@
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs uppercase text-slate-400 block mb-1">MÃ©todo de Pago</label>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Método de Pago</label>
                                             <select
                                                 required
                                                 value={paymentModal.method}
@@ -1007,11 +1007,11 @@
                                             <input required value={editingClient.name} onChange={e => setEditingClient({ ...editingClient, name: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none" />
                                         </div>
                                         <div>
-                                            <label className="text-xs uppercase text-slate-400 block mb-1">TelÃ©fono</label>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Teléfono</label>
                                             <input value={editingClient.phone} onChange={e => setEditingClient({ ...editingClient, phone: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none" />
                                         </div>
                                         <div>
-                                            <label className="text-xs uppercase text-slate-400 block mb-1">DirecciÃ³n / Obra</label>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Dirección / Obra</label>
                                             <input value={editingClient.address} onChange={e => setEditingClient({ ...editingClient, address: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-3 focus:ring-2 ring-blue-500 outline-none" />
                                         </div>
                                         <div>
@@ -1121,7 +1121,7 @@
                 // Entity Header
                 doc.setTextColor(255, 255, 255);
                 doc.setFontSize(10);
-                doc.text("ADMINISTRACIÃ“N INTERNA", 200, 10, { align: "right" });
+                doc.text("ADMINISTRACIÓN INTERNA", 200, 10, { align: "right" });
 
                 // Company Name
                 doc.setTextColor(...primaryColor);
@@ -1132,7 +1132,7 @@
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(10);
                 doc.setTextColor(...accentColor);
-                doc.text("CarpinterÃ­a de diseÃ±o & Amoblamientos a medida", 14, 42);
+                doc.text("Carpintería de diseño & Amoblamientos a medida", 14, 42);
 
                 // Document Info
                 doc.setDrawColor(200, 200, 200);
@@ -1145,7 +1145,7 @@
 
                 doc.setFontSize(10);
                 doc.setFont("helvetica", "normal");
-                doc.text(`NÂ°: ${Date.now().toString().slice(-6)}`, 196, 60, { align: "right" });
+                doc.text(`N°: ${Date.now().toString().slice(-6)}`, 196, 60, { align: "right" });
                 doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 196, 66, { align: "right" });
 
                 // Client Info Box
@@ -1168,7 +1168,7 @@
                 // Table
                 doc.autoTable({
                     startY: 110,
-                    head: [['DESCRIPCIÃ“N / DETALLE DE OBRA', 'CANT.', 'SUBTOTAL']],
+                    head: [['DESCRIPCIÓN / DETALLE DE OBRA', 'CANT.', 'SUBTOTAL']],
                     body: items.map(i => [i.desc.toUpperCase(), i.qty, `$ ${i.price.toLocaleString()}`]),
                     theme: 'grid',
                     headStyles: {
@@ -1218,7 +1218,7 @@
                 doc.setTextColor(150);
                 doc.setFont("helvetica", "italic");
                 const footerY = 280;
-                doc.text("Presupuesto vÃ¡lido por 10 dÃ­as. Sujeto a variaciones de costo de materiales.", 105, footerY, { align: "center" });
+                doc.text("Presupuesto válido por 10 días. Sujeto a variaciones de costo de materiales.", 105, footerY, { align: "center" });
                 doc.text("Gracias por elegir Fabrizio Amoblamientos", 105, footerY + 5, { align: "center" });
 
                 doc.save(`Presupuesto_${selectedClient?.name || 'obra'}.pdf`);
@@ -1367,7 +1367,7 @@
 
                             <div className="space-y-4">
                                 <div className="hidden md:grid grid-cols-12 gap-4 px-2 text-xs uppercase text-slate-500 font-bold">
-                                    <div className="col-span-7">DescripciÃ³n / Material</div>
+                                    <div className="col-span-7">Descripción / Material</div>
                                     <div className="col-span-2 text-center">Cant.</div>
                                     <div className="col-span-3 text-right">Precio</div>
                                 </div>
@@ -1510,7 +1510,7 @@
                     setTransactionModal({ isOpen: false, supplierId: null, type: 'DEUDA' });
                     setTransactionData({ amount: '', desc: '', date: new Date().toISOString().split('T')[0], dueDate: '', receiptFile: null });
                 } catch (err) {
-                    window.addToast("Error al guardar transacciÃ³n: " + err.message, 'error');
+                    window.addToast("Error al guardar transacción: " + err.message, 'error');
                 } finally {
                     setIsSubmittingTx(false);
                 }
@@ -1578,14 +1578,14 @@
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-xs uppercase text-slate-400 block mb-1">Nombre / Empresa</label>
-                                    <input value={newSupplier.name} onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="Maderera San JosÃ©" />
+                                    <input value={newSupplier.name} onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="Maderera San José" />
                                 </div>
                                 <div>
-                                    <label className="text-xs uppercase text-slate-400 block mb-1">WhatsApp / TelÃ©fono</label>
+                                    <label className="text-xs uppercase text-slate-400 block mb-1">WhatsApp / Teléfono</label>
                                     <input value={newSupplier.phone} onChange={e => setNewSupplier({ ...newSupplier, phone: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="+54 9..." />
                                 </div>
                                 <div>
-                                    <label className="text-xs uppercase text-slate-400 block mb-1">Insumos (QuÃ© trae)</label>
+                                    <label className="text-xs uppercase text-slate-400 block mb-1">Insumos (Qué trae)</label>
                                     <input value={newSupplier.supplies} onChange={e => setNewSupplier({ ...newSupplier, supplies: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="Placas, Herrajes..." />
                                 </div>
                                 <button onClick={addSupplier} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
@@ -1623,7 +1623,7 @@
                             )}
 
                             {filteredSuppliers.length === 0 ? (
-                                <div className="glass p-10 rounded-2xl text-center text-slate-500">No hay proveedores registrados o coincidencias de bÃºsqueda</div>
+                                <div className="glass p-10 rounded-2xl text-center text-slate-500">No hay proveedores registrados o coincidencias de búsqueda</div>
                             ) : (
                                 filteredSuppliers.map(s => {
                                     const totalDebt = (s.debts || []).reduce((acc, d) => acc + d.amount, 0);
@@ -1650,7 +1650,7 @@
                                                     <a href={`tel:${s.phone.replace(/\D/g, '')}`} className="p-2 glass rounded-lg hover:bg-slate-500/20 text-slate-300" title="Llamar"><Icon name="phone" /></a>
                                                     <a href={`https://wa.me/${s.phone.replace(/\D/g, '')}`} target="_blank" className="p-2 glass rounded-lg hover:bg-green-500/20 text-green-400" title="WhatsApp"><Icon name="message-circle" /></a>
                                                     <button onClick={async () => {
-                                                        if (await window.confirmAsync('Â¿Eliminar proveedor?')) {
+                                                        if (await window.confirmAsync('¿Eliminar proveedor?')) {
                                                             try {
                                                                 await window.supabaseClient.from('proveedores').delete().eq('id', s.id);
                                                                 setSuppliers(suppliers.filter(prev => prev.id !== s.id));
@@ -1712,13 +1712,13 @@
                         </div>
                     </div>
 
-                    {/* Modal TransacciÃ³n Proveedor */}
+                    {/* Modal Transacción Proveedor */}
                     {transactionModal.isOpen && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
                             <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl">
                                 <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${transactionModal.type === 'DEUDA' ? 'text-orange-400' : 'text-emerald-400'}`}>
                                     <Icon name={transactionModal.type === 'DEUDA' ? 'trending-up' : 'trending-down'} />
-                                    {transactionModal.type === 'DEUDA' ? 'FacturaciÃ³n / Nueva Deuda' : 'Pago Emitido'}
+                                    {transactionModal.type === 'DEUDA' ? 'Facturación / Nueva Deuda' : 'Pago Emitido'}
                                 </h3>
                                 <form onSubmit={handleTransactionSubmit} className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
@@ -1845,7 +1845,7 @@
                             </div>
 
                             <div>
-                                <label className="text-[10px] uppercase text-slate-400 block mb-1.5 font-bold tracking-wider">ContraseÃ±a</label>
+                                <label className="text-[10px] uppercase text-slate-400 block mb-1.5 font-bold tracking-wider">Contraseña</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
                                         <Icon name="key" size={18} />
@@ -1943,7 +1943,7 @@
             };
 
             const handleDelete = async (id) => {
-                if (!(await window.confirmAsync("Â¿Deseas eliminar este registro de gasto de forma permanente?"))) return;
+                if (!(await window.confirmAsync("¿Deseas eliminar este registro de gasto de forma permanente?"))) return;
                 try {
                     await window.supabaseClient.from('costos_operativos').delete().eq('id', id);
                     setCosts(costs.filter(c => c.id !== id));
@@ -1999,12 +1999,12 @@
                             <h3 className="text-xl font-semibold mb-6 flex items-center gap-2 text-red-400"><Icon name="minus-circle" /> Registrar Egreso</h3>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="text-xs uppercase text-slate-400 block mb-1">CategorÃ­a</label>
+                                    <label className="text-xs uppercase text-slate-400 block mb-1">Categoría</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <button type="button" onClick={() => setFormData({ ...formData, categoria: 'Fijo' })} className={`py-2 px-3 rounded-lg text-sm font-bold border transition-all ${formData.categoria === 'Fijo' ? 'bg-purple-600/20 border-purple-500 text-purple-300' : 'bg-slate-800 border-transparent text-slate-400 hover:bg-slate-700'}`}>Fijo</button>
                                         <button type="button" onClick={() => setFormData({ ...formData, categoria: 'Variable' })} className={`py-2 px-3 rounded-lg text-sm font-bold border transition-all ${formData.categoria === 'Variable' ? 'bg-amber-600/20 border-amber-500 text-amber-300' : 'bg-slate-800 border-transparent text-slate-400 hover:bg-slate-700'}`}>Variable</button>
                                     </div>
-                                    <p className="text-[10px] text-slate-500 mt-1">{formData.categoria === 'Fijo' ? 'Luz, Alquileres, Sueldos fijos.' : 'Reparaciones, ViÃ¡ticos imprevistos, etc.'}</p>
+                                    <p className="text-[10px] text-slate-500 mt-1">{formData.categoria === 'Fijo' ? 'Luz, Alquileres, Sueldos fijos.' : 'Reparaciones, Viáticos imprevistos, etc.'}</p>
                                 </div>
 
                                 <div>
@@ -2036,7 +2036,7 @@
                             <div className="glass p-5 rounded-2xl border-l-4 border-l-red-500 flex justify-between items-center">
                                 <div>
                                     <h4 className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-1">Gasto Operativo</h4>
-                                    <p className="text-xs text-slate-500">SegÃºn los filtros aplicados en cabecera</p>
+                                    <p className="text-xs text-slate-500">Según los filtros aplicados en cabecera</p>
                                 </div>
                                 <span className={`text-3xl lg:text-4xl font-mono font-bold ${totalAmount > 0 ? 'text-red-400' : 'text-slate-500'}`}>
                                     ${totalAmount.toLocaleString()}
@@ -2123,7 +2123,7 @@
             // Active Chart State
             const [activeChart, setActiveChart] = useState('FLUJO_CAJA'); // FLUJO_CAJA, ADEUDADO, COBRADO, A_PAGAR, COSTOS, LIQUIDEZ
 
-            // Filtro Global de Mes y AÃ±o
+            // Filtro Global de Mes y Año
             const [selectedMonth, setSelectedMonth] = useState(''); // Formato YYYY-MM
 
             useEffect(() => {
@@ -2233,13 +2233,13 @@
                 <div className="p-4 md:p-8 pb-20">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 md:mb-8 gap-4">
                         <h2 className="text-2xl md:text-3xl font-bold text-blue-400 flex items-center gap-3">
-                            <Icon name="bar-chart-2" size={28} /> EstadÃ­sticas {isLoading && <Icon name="loader" size={24} className="animate-spin text-slate-500" />}
+                            <Icon name="bar-chart-2" size={28} /> Estadísticas {isLoading && <Icon name="loader" size={24} className="animate-spin text-slate-500" />}
                         </h2>
 
                         {/* Filtro por Mes (Input Nativo HTML5) */}
                         <div className="flex items-center gap-3 bg-slate-800/80 border border-slate-700 p-2 px-4 rounded-xl shadow-lg">
                             <Icon name="calendar" size={18} className="text-blue-400" />
-                            <div className="hidden md:block text-sm font-semibold text-slate-300">Filtrar por PerÃ­odo:</div>
+                            <div className="hidden md:block text-sm font-semibold text-slate-300">Filtrar por Período:</div>
                             <input
                                 type="month"
                                 value={selectedMonth}
@@ -2371,12 +2371,12 @@
                                 {isLoading ? (
                                     <div className="text-slate-400 text-center relative w-full h-full flex flex-col items-center justify-center">
                                         <Icon name="loader" size={48} className="mx-auto mb-4 animate-[spin_2s_linear_infinite] opacity-50" />
-                                        <span className="animate-pulse">Calculando grÃ¡ficas Recharts...</span>
+                                        <span className="animate-pulse">Calculando gráficas Recharts...</span>
                                     </div>
                                 ) : (!window.Recharts || !window.Recharts.ResponsiveContainer) ? (
                                     <div className="text-center text-slate-500">
                                         <Icon name="loader" size={48} className="mx-auto opacity-30 mb-4 animate-[spin_2s_linear_infinite]" />
-                                        <span className="block text-sm">Cargando mÃ³dulos de grÃ¡ficas...</span>
+                                        <span className="block text-sm">Cargando módulos de gráficas...</span>
                                     </div>
                                 ) : activeChart === 'FLUJO_CAJA' ? (
                                     chartData.length === 0 ? (
@@ -2417,7 +2417,7 @@
                                                     (stats.aging || []).map((entry, index) => (
                                                         <window.Recharts.Cell
                                                             key={`cell-${index}`}
-                                                            fill={entry.range === '0-30 dÃ­as' ? '#10b981' : entry.range === '31-60 dÃ­as' ? '#f59e0b' : '#ef4444'}
+                                                            fill={entry.range === '0-30 días' ? '#10b981' : entry.range === '31-60 días' ? '#f59e0b' : '#ef4444'}
                                                         />
                                                     ))
                                                 }
@@ -2430,7 +2430,7 @@
                                     <window.Recharts.ResponsiveContainer width="100%" height="100%">
                                         <window.Recharts.BarChart
                                             data={[
-                                                { name: 'Balance Actual', "Te Deben (Clientes)": stats.owed, "Vos DebÃ©s (Proveedores)": stats.toPay }
+                                                { name: 'Balance Actual', "Te Deben (Clientes)": stats.owed, "Vos Debés (Proveedores)": stats.toPay }
                                             ]}
                                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                         >
@@ -2440,7 +2440,7 @@
                                             <window.Recharts.Tooltip cursor={{ fill: '#334155', opacity: 0.4 }} formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
                                             <window.Recharts.Legend />
                                             <window.Recharts.Bar dataKey="Te Deben (Clientes)" fill="#f97316" radius={[4, 4, 0, 0]} barSize={80} />
-                                            <window.Recharts.Bar dataKey="Vos DebÃ©s (Proveedores)" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={80} />
+                                            <window.Recharts.Bar dataKey="Vos Debés (Proveedores)" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={80} />
                                         </window.Recharts.BarChart>
                                     </window.Recharts.ResponsiveContainer>
                                 ) : activeChart === 'COSTOS' ? (
@@ -2521,7 +2521,7 @@
 
             const handleDeleteRow = async (localId, dbId) => {
                 if (dbId) {
-                    if (!(await window.confirmAsync("Â¿Eliminar este insumo de la base de datos?"))) return;
+                    if (!(await window.confirmAsync("¿Eliminar este insumo de la base de datos?"))) return;
                     try {
                         const { error } = await window.supabaseClient.from('insumos_precios').delete().eq('id', dbId);
                         if (error) throw error;
@@ -2700,7 +2700,7 @@
                     <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] text-slate-500 gap-2">
                         <p className="flex items-center gap-1.5 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
                             <Icon name="info" size={14} className="text-blue-400 shrink-0" />
-                            <span>El cuadro soporta guardar insumos unitarios o por cantidad total segÃºn tus necesidades manuales.</span>
+                            <span>El cuadro soporta guardar insumos unitarios o por cantidad total según tus necesidades manuales.</span>
                         </p>
                         <p className="font-bold border border-slate-700/50 px-3 py-1.5 rounded-lg">Total insumos: <span className="text-blue-400">{items.length}</span></p>
                     </div>
@@ -2757,7 +2757,7 @@
 
                     if (error) throw error;
 
-                    window.addToast("Usuario creado con Ã©xito.", 'success');
+                    window.addToast("Usuario creado con éxito.", 'success');
                     setNewEmail('');
                     setNewPass('');
                     fetchUsers();
@@ -2770,7 +2770,7 @@
             };
 
             const handleDeleteUser = async (uid) => {
-                if (!(await window.confirmAsync("Â¿Eliminar este usuario? PerderÃ¡ acceso inmediatamente."))) return;
+                if (!(await window.confirmAsync("¿Eliminar este usuario? Perderá acceso inmediatamente."))) return;
                 try {
                     const { error } = await window.supabaseClient.from('usuarios').delete().eq('id', uid);
                     if (error) throw error;
@@ -2786,8 +2786,8 @@
                 <div className="p-4 md:p-8 pb-20 max-w-6xl mx-auto">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                         <div>
-                            <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">GestiÃ³n de Equipo</h2>
-                            <p className="text-slate-400 text-sm mt-1">Administra los accesos y roles de tu carpinterÃ­a.</p>
+                            <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">Gestión de Equipo</h2>
+                            <p className="text-slate-400 text-sm mt-1">Administra los accesos y roles de tu carpintería.</p>
                         </div>
                     </div>
 
@@ -2860,7 +2860,7 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">ContraseÃ±a Temporal</label>
+                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">Contraseña Temporal</label>
                                     <div className="relative">
                                         <Icon name="lock" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                         <input
@@ -2883,14 +2883,14 @@
                                     >
                                         <option value="admin">Administrador (Total)</option>
                                         <option value="editor">Editor (Ventas / Taller)</option>
-                                        <option value="viewer">Observador (SÃ³lo Lectura)</option>
+                                        <option value="viewer">Observador (Sólo Lectura)</option>
                                     </select>
                                 </div>
 
                                 <div className="p-4 bg-blue-500/5 rounded-xl border border-blue-500/20">
                                     <p className="text-[10px] text-slate-400 italic">
                                         <Icon name="info" size={12} className="inline mr-1 text-blue-400" />
-                                        Si el usuario ya existe en Supabase Auth, se agregarÃ¡ el perfil a tu empresa con el rol seleccionado.
+                                        Si el usuario ya existe en Supabase Auth, se agregará el perfil a tu empresa con el rol seleccionado.
                                     </p>
                                 </div>
 
@@ -2997,7 +2997,7 @@
                         <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
                             <Icon name="alert-triangle" size={32} />
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2">Confirmar AcciÃ³n</h3>
+                        <h3 className="text-xl font-bold text-white mb-2">Confirmar Acción</h3>
                         <p className="text-slate-400 mb-8">{message}</p>
                         <div className="flex gap-3">
                             <button onClick={() => handleConfirm(false)} className="flex-1 px-4 py-3 rounded-xl font-bold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors">Cancelar</button>
@@ -3039,7 +3039,7 @@
                 localStorage.setItem('fabrizio_suppliers', JSON.stringify(suppliers));
             }, [suppliers]);
 
-            // SubscripciÃ³n a estado de autenticaciÃ³n de Supabase
+            // Subscripción a estado de autenticación de Supabase
             useEffect(() => {
                 if (!window.supabaseClient) {
                     setIsCheckingSession(false);
@@ -3070,7 +3070,7 @@
                         setUserRole(data.role || 'viewer');
                         setIsCheckingSession(false);
                     } else {
-                        // Reintento breve para asegurar que el trigger terminÃ³
+                        // Reintento breve para asegurar que el trigger terminó
                         setTimeout(async () => {
                             const { data: retryData } = await window.supabaseClient.from('usuarios').select('tenant_id, role').eq('id', uid).single();
                             if (retryData) {
@@ -3087,13 +3087,13 @@
             };
 
             const handleLogout = async () => {
-                if (await window.confirmAsync('Â¿Seguro que deseas cerrar sesiÃ³n?')) {
+                if (await window.confirmAsync('¿Seguro que deseas cerrar sesión?')) {
                     await window.supabaseClient.auth.signOut();
                 }
             };
 
             if (isCheckingSession) {
-                return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-400">Verificando sesiÃ³n...</div>;
+                return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-400">Verificando sesión...</div>;
             }
 
             if (!session) {
@@ -3187,7 +3187,7 @@
                                 <pre className="text-slate-400 mt-2">{this.state.errorInfo && this.state.errorInfo.componentStack}</pre>
                             </div>
                             <button onClick={() => window.location.reload()} className="bg-blue-600 px-4 py-2 rounded font-bold">
-                                Recargar PÃ¡gina
+                                Recargar Página
                             </button>
                         </div>
                     );
