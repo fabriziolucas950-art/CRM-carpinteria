@@ -2095,7 +2095,17 @@
         };
 
         const Statistics = ({ tenantId }) => {
-            const [stats, setStats] = useState({ owed: 0, collected: 0, toPay: 0, costs: 0 });
+            const [stats, setStats] = useState({
+                owed: 0,
+                collected: 0,
+                toPay: 0,
+                costs: 0,
+                liquidity: 0,
+                margin: 0,
+                coverage: 0,
+                aging: [],
+                variations: { owed: 0, collected: 0, costs: 0 }
+            });
             const [chartData, setChartData] = useState([]);
             const [costsData, setCostsData] = useState([]);
             const [isLoading, setIsLoading] = useState(true);
@@ -2106,7 +2116,7 @@
             const [showToPay, setShowToPay] = useState(true);
 
             // Active Chart State
-            const [activeChart, setActiveChart] = useState('FLUJO_CAJA'); // FLUJO_CAJA, ADEUDADO, COBRADO, A_PAGAR, COSTOS
+            const [activeChart, setActiveChart] = useState('FLUJO_CAJA'); // FLUJO_CAJA, ADEUDADO, COBRADO, A_PAGAR, COSTOS, LIQUIDEZ
 
             // Filtro Global de Mes y Año
             const [selectedMonth, setSelectedMonth] = useState(''); // Formato YYYY-MM
@@ -2272,9 +2282,12 @@
                             </div>
 
                             {/* KPI 2: Margen Neto Proyectado */}
-                            <div className="glass rounded-xl overflow-hidden group relative border border-blue-500/20 p-5">
+                            <div
+                                onClick={() => setActiveChart('A_PAGAR')}
+                                className={`glass rounded-xl overflow-hidden group relative cursor-pointer border transition-all p-5 ${activeChart === 'A_PAGAR' ? 'border-2 border-blue-400 bg-blue-900/40' : 'border-blue-500/20 hover:border-blue-400/50 hover:bg-slate-800/50'}`}
+                            >
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-bl-full -z-10"></div>
-                                <h3 className="text-xs font-bold uppercase text-slate-400 mb-1">Margen Neto Proyectado</h3>
+                                <h3 className={`text-xs font-bold uppercase mb-1 ${activeChart === 'A_PAGAR' ? 'text-blue-200' : 'text-slate-400'}`}>Margen Neto Proyectado</h3>
                                 <p className={`text-xl font-mono font-bold ${(stats.margin || 0) >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
                                     {isLoading ? '...' : `$${(stats.margin || 0).toLocaleString()}`}
                                 </p>
@@ -2284,8 +2297,11 @@
                             </div>
 
                             {/* KPI 3: Liquidez Real */}
-                            <div className="glass rounded-xl overflow-hidden group relative border border-emerald-500/30 bg-emerald-500/5 p-5">
-                                <h3 className="text-xs font-bold uppercase text-emerald-400 mb-1">Flujo de Caja Neto</h3>
+                            <div
+                                onClick={() => setActiveChart('FLUJO_CAJA')}
+                                className={`glass rounded-xl overflow-hidden group relative cursor-pointer border transition-all p-5 ${activeChart === 'FLUJO_CAJA' ? 'border-2 border-emerald-500 bg-emerald-500/10' : 'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10'}`}
+                            >
+                                <h3 className={`text-xs font-bold uppercase mb-1 ${activeChart === 'FLUJO_CAJA' ? 'text-emerald-200' : 'text-emerald-400'}`}>Flujo de Caja Neto</h3>
                                 <p className={`text-xl font-mono font-bold ${(stats.liquidity || 0) >= 0 ? 'text-emerald-100' : 'text-red-400'}`}>
                                     {isLoading ? '...' : `$${(stats.liquidity || 0).toLocaleString()}`}
                                 </p>
@@ -2293,8 +2309,11 @@
                             </div>
 
                             {/* KPI 4: Ratio de Cobertura */}
-                            <div className="glass rounded-xl overflow-hidden group relative border border-orange-500/20 p-5">
-                                <h3 className="text-xs font-bold uppercase text-slate-400 mb-1">Ratio de Cobertura</h3>
+                            <div
+                                onClick={() => setActiveChart('ADEUDADO')}
+                                className={`glass rounded-xl overflow-hidden group relative cursor-pointer border transition-all p-5 ${activeChart === 'ADEUDADO' ? 'border-2 border-orange-400 bg-orange-900/20' : 'border-orange-500/20 hover:border-orange-400/50 hover:bg-slate-800/50'}`}
+                            >
+                                <h3 className={`text-xs font-bold uppercase mb-1 ${activeChart === 'ADEUDADO' ? 'text-orange-200' : 'text-slate-400'}`}>Ratio de Cobertura</h3>
                                 <div className="flex items-end gap-2">
                                     <p className="text-xl font-mono font-bold text-white">
                                         {isLoading ? '...' : `${stats.coverage || 0}x`}
@@ -2387,7 +2406,7 @@
                                                 paddingAngle={5}
                                                 dataKey="amount"
                                                 nameKey="range"
-                                                label={({ range, percent }) => `${range} ${(percent * 100).toFixed(0)}%`}
+                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                                             >
                                                 {
                                                     (stats.aging || []).map((entry, index) => (
