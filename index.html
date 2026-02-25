@@ -103,63 +103,68 @@
         };
 
         // --- Layout Components ---
-        const Sidebar = ({ currentTab, setTab, isOpen, setIsOpen, onLogout }) => (
-            <>
-                {/* Backdrop for mobile */}
-                {isOpen && (
-                    <div
-                        className="fixed inset-0 bg-black/50 z-[80] lg:hidden transition-opacity"
-                        onClick={() => setIsOpen(false)}
-                    ></div>
-                )}
+        const Sidebar = ({ currentTab, setTab, isOpen, setIsOpen, onLogout, userRole = 'viewer' }) => {
+            const menuItems = [
+                { id: 'dashboard', label: 'Inicio', icon: 'home', roles: ['admin', 'editor', 'viewer'] },
+                { id: 'clients', label: 'Clientes', icon: 'users', roles: ['admin', 'editor', 'viewer'] },
+                { id: 'quoter', label: 'Cotizador', icon: 'file-text', roles: ['admin', 'editor'] },
+                { id: 'prices', label: 'Lista de Precios', icon: 'list', roles: ['admin', 'editor'] },
+                { id: 'suppliers', label: 'Proveedores', icon: 'truck', roles: ['admin', 'editor'] },
+                { id: 'costs', label: 'Costos Operativos', icon: 'receipt', roles: ['admin', 'editor'], special: true },
+                { id: 'statistics', label: 'Estadísticas', icon: 'pie-chart', roles: ['admin'], special: true },
+                { id: 'users', label: 'Equipo', icon: 'user-cog', roles: ['admin'] }
+            ];
 
-                <div className={`w-64 h-screen glass fixed left-0 top-0 flex flex-col p-4 z-[90] transition-all duration-300 transform 
-                    ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+            const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
 
-                    <div className="flex justify-between items-center mb-10 px-2">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-slate-100 p-1.5 rounded-lg flex items-center justify-center" style={{ width: '40px', height: '40px' }}>
-                                <img src="data:image/png;base64,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" alt="Logo" className="w-full h-full object-contain" />
+            return (
+                <>
+                    {/* Backdrop for mobile */}
+                    {isOpen && (
+                        <div
+                            className="fixed inset-0 bg-black/50 z-[80] lg:hidden transition-opacity"
+                            onClick={() => setIsOpen(false)}
+                        ></div>
+                    )}
+
+                    <div className={`w-64 h-screen glass fixed left-0 top-0 flex flex-col p-4 z-[90] transition-all duration-300 transform 
+                        ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+
+                        <div className="flex justify-between items-center mb-10 px-2">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-slate-100 p-1.5 rounded-lg flex items-center justify-center" style={{ width: '40px', height: '40px' }}>
+                                    <img src="data:image/png;base64,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" alt="Logo" className="w-full h-full object-contain" />
+                                </div>
+                                <h1 className="font-bold text-xl tracking-tight">Fabrizio<span className="text-blue-500 text-sm block font-normal">Admin</span></h1>
                             </div>
-                            <h1 className="font-bold text-xl tracking-tight">Fabrizio<span className="text-blue-500 text-sm block font-normal">Admin</span></h1>
+                            <button onClick={() => setIsOpen(false)} className="lg:hidden p-1 text-slate-400">
+                                <Icon name="x" size={24} />
+                            </button>
                         </div>
-                        <button onClick={() => setIsOpen(false)} className="lg:hidden p-1 text-slate-400">
-                            <Icon name="x" size={24} />
-                        </button>
-                    </div>
 
-                    <nav className="space-y-2 flex-grow">
-                        <button onClick={() => { setTab('dashboard'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all ${currentTab === 'dashboard' ? 'active' : ''}`}>
-                            <Icon name="home" /> Inicio
-                        </button>
-                        <button onClick={() => { setTab('clients'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all ${currentTab === 'clients' ? 'active' : ''}`}>
-                            <Icon name="users" /> Clientes
-                        </button>
-                        <button onClick={() => { setTab('quoter'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all ${currentTab === 'quoter' ? 'active' : ''}`}>
-                            <Icon name="file-text" /> Cotizador
-                        </button>
-                        <button onClick={() => { setTab('prices'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all ${currentTab === 'prices' ? 'active' : ''}`}>
-                            <Icon name="list" /> Lista de Precios
-                        </button>
-                        <button onClick={() => { setTab('suppliers'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all ${currentTab === 'suppliers' ? 'active' : ''}`}>
-                            <Icon name="truck" /> Proveedores
-                        </button>
-                        <button onClick={() => { setTab('costs'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 rounded-lg transition-all ${currentTab === 'costs' ? 'active' : ''}`}>
-                            <Icon name="receipt" /> Costos Operativos
-                        </button>
-                        <button onClick={() => { setTab('statistics'); setIsOpen(false); }} className={`sidebar-item w-full flex items-center gap-3 p-3 bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 rounded-lg transition-all ${currentTab === 'statistics' ? 'active' : ''}`}>
-                            <Icon name="pie-chart" /> Estadísticas
-                        </button>
-                    </nav>
+                        <nav className="space-y-2 flex-grow">
+                            {filteredItems.map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => { setTab(item.id); setIsOpen(false); }}
+                                    className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all 
+                                        ${currentTab === item.id ? 'active' : ''} 
+                                        ${item.special ? 'bg-orange-600/20 text-orange-400 hover:bg-orange-600/30' : ''}`}
+                                >
+                                    <Icon name={item.icon} /> {item.label}
+                                </button>
+                            ))}
+                        </nav>
 
-                    <div className="mt-auto border-t border-slate-700 pt-4">
-                        <button onClick={onLogout} className="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
-                            <Icon name="log-out" /> Salir
-                        </button>
+                        <div className="mt-auto border-t border-slate-700 pt-4">
+                            <button onClick={onLogout} className="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
+                                <Icon name="log-out" /> Salir
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </>
-        );
+                </>
+            );
+        };
 
         // --- Modules ---
 
@@ -2703,7 +2708,206 @@
             );
         };
 
-        // --- Toast System ---
+        // --- User Management Module ---
+        const UserManagement = ({ tenantId }) => {
+            const [users, setUsers] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+            const [isInviting, setIsInviting] = useState(false);
+            const [newEmail, setNewEmail] = useState('');
+            const [newPass, setNewPass] = useState('');
+            const [newRole, setNewRole] = useState('editor');
+
+            const fetchUsers = async () => {
+                setIsLoading(true);
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .from('usuarios')
+                        .select('*')
+                        .eq('tenant_id', tenantId);
+                    if (error) throw error;
+                    setUsers(data || []);
+                } catch (err) {
+                    console.error(err);
+                    window.addToast("Error al cargar equipo.", 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                if (tenantId) fetchUsers();
+            }, [tenantId]);
+
+            const handleCreateUser = async (e) => {
+                e.preventDefault();
+                if (!newEmail || !newPass) return;
+                setIsInviting(true);
+                try {
+                    // SignUp de Supabase Auth
+                    const { data, error } = await window.supabaseClient.auth.signUp({
+                        email: newEmail,
+                        password: newPass,
+                        options: {
+                            data: {
+                                role: newRole,
+                                tenant_id: tenantId
+                            }
+                        }
+                    });
+
+                    if (error) throw error;
+
+                    window.addToast("Usuario creado con éxito.", 'success');
+                    setNewEmail('');
+                    setNewPass('');
+                    fetchUsers();
+                } catch (err) {
+                    console.error(err);
+                    window.addToast(err.message, 'error');
+                } finally {
+                    setIsInviting(false);
+                }
+            };
+
+            const handleDeleteUser = async (uid) => {
+                if (!(await window.confirmAsync("¿Eliminar este usuario? Perderá acceso inmediatamente."))) return;
+                try {
+                    const { error } = await window.supabaseClient.from('usuarios').delete().eq('id', uid);
+                    if (error) throw error;
+                    window.addToast("Usuario eliminado.", 'success');
+                    fetchUsers();
+                } catch (e) {
+                    console.error(e);
+                    window.addToast("Error al eliminar.", 'error');
+                }
+            };
+
+            return (
+                <div className="p-4 md:p-8 pb-20 max-w-6xl mx-auto">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">Gestión de Equipo</h2>
+                            <p className="text-slate-400 text-sm mt-1">Administra los accesos y roles de tu carpintería.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Listado */}
+                        <div className="lg:col-span-2 glass rounded-2xl overflow-hidden shadow-xl border border-slate-700/50">
+                            <div className="p-6 border-b border-slate-700/50 bg-slate-800/30">
+                                <h3 className="font-bold flex items-center gap-2"><Icon name="users" className="text-blue-400" /> Miembros del Equipo</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-xs uppercase tracking-wider text-slate-500 border-b border-slate-700/50 bg-slate-800/10">
+                                            <th className="p-4 font-semibold">Email</th>
+                                            <th className="p-4 font-semibold text-center">Rol</th>
+                                            <th className="p-4 font-semibold text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-800/50">
+                                        {isLoading ? (
+                                            <tr><td colSpan="3" className="p-10 text-center"><div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div></td></tr>
+                                        ) : users.length === 0 ? (
+                                            <tr><td colSpan="3" className="p-10 text-center text-slate-500 italic">No hay miembros registrados.</td></tr>
+                                        ) : users.map(user => (
+                                            <tr key={user.id} className="hover:bg-slate-800/20 transition-colors">
+                                                <td className="p-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-medium text-slate-200">{user.email}</span>
+                                                        <span className="text-[10px] text-slate-500">ID: {user.id.slice(0, 8)}...</span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border 
+                                                        ${user.role === 'admin' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                                            user.role === 'editor' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                                                'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
+                                                        {user.role}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <button onClick={() => handleDeleteUser(user.id)} className="p-2 text-slate-400 hover:text-red-400 transition-colors">
+                                                        <Icon name="trash-2" size={18} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Alta de Usuario */}
+                        <div className="glass p-6 rounded-2xl shadow-xl h-fit border border-slate-700/50">
+                            <h3 className="font-bold text-lg mb-6 flex items-center gap-2 text-blue-400">
+                                <Icon name="user-plus" /> Agregar Miembro
+                            </h3>
+                            <form onSubmit={handleCreateUser} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">Email del Usuario</label>
+                                    <div className="relative">
+                                        <Icon name="mail" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                        <input
+                                            type="email"
+                                            required
+                                            value={newEmail}
+                                            onChange={e => setNewEmail(e.target.value)}
+                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 pl-10 outline-none focus:border-blue-500 transition-all text-sm"
+                                            placeholder="ejemplo@correo.com"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">Contraseña Temporal</label>
+                                    <div className="relative">
+                                        <Icon name="lock" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                        <input
+                                            type="password"
+                                            required
+                                            minLength="6"
+                                            value={newPass}
+                                            onChange={e => setNewPass(e.target.value)}
+                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 pl-10 outline-none focus:border-blue-500 transition-all text-sm"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">Rol Asignado</label>
+                                    <select
+                                        value={newRole}
+                                        onChange={e => setNewRole(e.target.value)}
+                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-blue-500 transition-all text-sm appearance-none cursor-pointer"
+                                    >
+                                        <option value="admin">Administrador (Total)</option>
+                                        <option value="editor">Editor (Ventas / Taller)</option>
+                                        <option value="viewer">Observador (Sólo Lectura)</option>
+                                    </select>
+                                </div>
+
+                                <div className="p-4 bg-blue-500/5 rounded-xl border border-blue-500/20">
+                                    <p className="text-[10px] text-slate-400 italic">
+                                        <Icon name="info" size={12} className="inline mr-1 text-blue-400" />
+                                        Si el usuario ya existe en Supabase Auth, se agregará el perfil a tu empresa con el rol seleccionado.
+                                    </p>
+                                </div>
+
+                                <button
+                                    disabled={isInviting}
+                                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                                >
+                                    {isInviting ? <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></div> : <Icon name="send" size={18} />}
+                                    Crear Usuario
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         window.addToast = (message, type = 'info') => {
             window.dispatchEvent(new CustomEvent('show-toast', { detail: { message, type } }));
         };
@@ -2808,6 +3012,7 @@
         const App = () => {
             const [session, setSession] = useState(null);
             const [tenantId, setTenantId] = useState(null);
+            const [userRole, setUserRole] = useState('viewer');
             const [isCheckingSession, setIsCheckingSession] = useState(true);
 
             const [tab, setTab] = useState('dashboard');
@@ -2859,18 +3064,26 @@
 
             const fetchTenantId = async (uid) => {
                 try {
-                    const { data, error } = await window.supabaseClient.from('usuarios').select('tenant_id').eq('id', uid).single();
-                    if (data && data.tenant_id !== undefined && data.tenant_id !== null) {
+                    const { data, error } = await window.supabaseClient.from('usuarios').select('tenant_id, role').eq('id', uid).single();
+                    if (data) {
                         setTenantId(data.tenant_id);
+                        setUserRole(data.role || 'viewer');
                         setIsCheckingSession(false);
                     } else {
+                        // Reintento breve para asegurar que el trigger terminó
                         setTimeout(async () => {
-                            const { data: retryData } = await window.supabaseClient.from('usuarios').select('tenant_id').eq('id', uid).single();
-                            if (retryData) setTenantId(retryData.tenant_id);
+                            const { data: retryData } = await window.supabaseClient.from('usuarios').select('tenant_id, role').eq('id', uid).single();
+                            if (retryData) {
+                                setTenantId(retryData.tenant_id);
+                                setUserRole(retryData.role || 'viewer');
+                            }
                             setIsCheckingSession(false);
-                        }, 1000);
+                        }, 1500);
                     }
-                } catch (e) { console.error(e); setIsCheckingSession(false); }
+                } catch (e) {
+                    console.error(e);
+                    setIsCheckingSession(false);
+                }
             };
 
             const handleLogout = async () => {
@@ -2893,7 +3106,7 @@
 
             return (
                 <div className="flex bg-slate-900 min-h-screen relative overflow-x-hidden">
-                    <Sidebar currentTab={tab} setTab={setTab} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} />
+                    <Sidebar currentTab={tab} setTab={setTab} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} userRole={userRole} />
 
                     <main className={`flex-grow transition-all duration-300 min-h-screen ml-0 lg:ml-64`}>
                         {/* Persistent Header with Toggle */}
@@ -2922,11 +3135,24 @@
 
                         {tab === 'dashboard' && <Dashboard tenantId={tenantId} setTab={setTab} />}
                         {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} tenantId={tenantId} />}
-                        {tab === 'quoter' && <Quoter clients={clients} setClients={setClients} tenantId={tenantId} />}
-                        {tab === 'prices' && <PriceList tenantId={tenantId} />}
+                        {(tab === 'quoter' && ['admin', 'editor'].includes(userRole)) && <Quoter clients={clients} setClients={setClients} tenantId={tenantId} />}
+                        {(tab === 'prices' && ['admin', 'editor'].includes(userRole)) && <PriceList tenantId={tenantId} />}
                         {tab === 'suppliers' && <SupplierManager suppliers={suppliers} setSuppliers={setSuppliers} tenantId={tenantId} />}
-                        {tab === 'costs' && <OperativeCosts tenantId={tenantId} />}
-                        {tab === 'statistics' && <Statistics tenantId={tenantId} />}
+                        {(tab === 'costs' && ['admin', 'editor'].includes(userRole)) && <OperativeCosts tenantId={tenantId} />}
+                        {(tab === 'statistics' && userRole === 'admin') && <Statistics tenantId={tenantId} />}
+                        {(tab === 'users' && userRole === 'admin') && <UserManagement tenantId={tenantId} />}
+
+                        {/* Fallback for unauthorized access */}
+                        {['quoter', 'prices', 'costs', 'statistics', 'users'].includes(tab) &&
+                            !((['quoter', 'prices', 'costs'].includes(tab) && ['admin', 'editor'].includes(userRole)) ||
+                                (['statistics', 'users'].includes(tab) && userRole === 'admin')) && (
+                                <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-slate-400 gap-4">
+                                    <Icon name="lock" size={48} className="text-slate-600" />
+                                    <h2 className="text-xl font-bold">Acceso Restringido</h2>
+                                    <p>No tienes permisos suficientes para ver esta sección.</p>
+                                    <button onClick={() => setTab('dashboard')} className="mt-4 px-6 py-2 bg-blue-600 rounded-xl text-white font-bold">Volver al Inicio</button>
+                                </div>
+                            )}
 
                     </main>
                     <ToastContainer />
