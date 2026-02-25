@@ -2111,86 +2111,63 @@
             // Filtro Global de Mes y Año
             const [selectedMonth, setSelectedMonth] = useState(''); // Formato YYYY-MM
 
-            // Fetch Data
             useEffect(() => {
                 if (!tenantId) return;
 
                 const loadDashboardData = async () => {
                     setIsLoading(true);
                     try {
-                        const { data: clientsData } = await window.supabaseClient.from('clientes').select('id, budgets:presupuestos(total, paid, date)').eq('tenant_id', tenantId);
-                        let totalOwed = 0;
-                        let totalCollected = 0;
-                        if (clientsData) {
-                            clientsData.forEach(c => {
-                                if (c.budgets) {
-                                    c.budgets.forEach(b => {
-                                        // Aplicar filtro si existe
-                                        if (b.date) {
-                                            const bYearMonth = b.date.substring(0, 7); // Extrae YYYY-MM
-                                            if (selectedMonth && bYearMonth !== selectedMonth) return;
-                                        }
+                        const currentMonth = selectedMonth || new Date().toISOString().substring(0, 7);
+                        const prevDate = new Date(currentMonth + '-01');
+                        prevDate.setMonth(prevDate.getMonth() - 1);
+                        const prevMonth = prevDate.toISOString().substring(0, 7);
 
-                                        const total = b.total || 0;
-                                        const paid = b.paid || 0;
-                                        totalCollected += paid;
-                                        totalOwed += (total - paid);
-                                    });
-                                }
-                            });
-                        }
+                        // 1. Fetch Summary Data (Current & Previous)
+                        const { data: summaryData } = await window.supabaseClient.from('financial_monthly_summary').select('*').eq('tenant_id', tenantId).in('month', [currentMonth, prevMonth]);
+                        const { data: costsSummary } = await window.supabaseClient.from('costs_monthly_summary').select('*').eq('tenant_id', tenantId).in('month', [currentMonth, prevMonth]);
+                        const { data: supplierSummary } = await window.supabaseClient.from('supplier_debts_monthly').select('*').eq('tenant_id', tenantId).in('month', [currentMonth, prevMonth]);
+                        const { data: agingData } = await window.supabaseClient.from('debt_aging_summary').select('*').eq('tenant_id', tenantId);
 
-                        // Proveedores
-                        const { data: suppliersData } = await window.supabaseClient.from('proveedores').select('debts').eq('tenant_id', tenantId);
-                        let totalToPay = 0;
-                        if (suppliersData) {
-                            suppliersData.forEach(s => {
-                                if (s.debts) {
-                                    s.debts.forEach(d => {
-                                        if (d.date) {
-                                            const dYearMonth = d.date.substring(0, 7); // Extrae YYYY-MM
-                                            if (selectedMonth && dYearMonth !== selectedMonth) return;
-                                        }
-                                        totalToPay += (d.amount || 0);
-                                    });
-                                }
-                            });
-                        }
+                        const curr = summaryData?.find(d => d.month === currentMonth) || { total_cobrado: 0, total_adeudado: 0 };
+                        const prev = summaryData?.find(d => d.month === prevMonth) || { total_cobrado: 0, total_adeudado: 0 };
+                        const currCosts = costsSummary?.find(d => d.month === currentMonth) || { total_gastos: 0, gastos_fijos: 0, gastos_variables: 0 };
+                        const prevCosts = costsSummary?.find(d => d.month === prevMonth) || { total_gastos: 0 };
+                        const currSupp = supplierSummary?.find(d => d.month === currentMonth) || { total_a_pagar: 0 };
+                        const prevSupp = supplierSummary?.find(d => d.month === prevMonth) || { total_a_pagar: 0 };
 
-                        // Fetch real Operational Costs
-                        let opsQuery = window.supabaseClient.from('costos_operativos').select('monto, categoria, fecha_gasto').eq('tenant_id', tenantId);
-                        if (selectedMonth) {
-                            const y = selectedMonth.split('-')[0];
-                            const m = selectedMonth.split('-')[1];
-                            const lastDay = new Date(y, parseInt(m), 0).getDate();
-                            opsQuery = opsQuery.gte('fecha_gasto', `${selectedMonth}-01`).lte('fecha_gasto', `${selectedMonth}-${lastDay}`);
-                        }
-                        const { data: opsCostsData } = await opsQuery;
+                        // 2. Calculate Stats
+                        const liquidity = Number(curr.total_cobrado) - (Number(currSupp.total_a_pagar) + Number(currCosts.total_gastos));
+                        const margin = (Number(curr.total_cobrado) + Number(curr.total_adeudado)) - (Number(currSupp.total_a_pagar) + Number(currCosts.total_gastos));
+                        const coverage = Number(currCosts.total_gastos) > 0 ? (Number(curr.total_adeudado) / Number(currCosts.total_gastos)).toFixed(1) : 0;
 
-                        let totalCosts = 0;
-                        if (opsCostsData) {
-                            totalCosts = opsCostsData.reduce((acc, cost) => acc + Number(cost.monto || 0), 0);
-                        }
+                        // 3. Calculate Variations (MoM)
+                        const calcVar = (c, p) => p > 0 ? ((c - p) / p * 100).toFixed(0) : 0;
 
-                        setStats({ owed: totalOwed, collected: totalCollected, toPay: totalToPay, costs: totalCosts });
+                        setStats({
+                            owed: Number(curr.total_adeudado),
+                            collected: Number(curr.total_cobrado),
+                            toPay: Number(currSupp.total_a_pagar),
+                            costs: Number(currCosts.total_gastos),
+                            liquidity,
+                            margin,
+                            coverage,
+                            breakEven: Number(currCosts.total_gastos),
+                            aging: agingData || [],
+                            variations: {
+                                owed: calcVar(Number(curr.total_adeudado), Number(prev.total_adeudado)),
+                                collected: calcVar(Number(curr.total_cobrado), Number(prev.total_cobrado)),
+                                costs: calcVar(Number(currCosts.total_gastos), Number(prevCosts.total_gastos))
+                            }
+                        });
 
-                        // Obtener transacciones monetarias filtradas o históricas enteras
-                        let tcQuery = window.supabaseClient.from('transacciones_clientes').select('*').eq('tenant_id', tenantId);
-                        let tpQuery = window.supabaseClient.from('transacciones_proveedores').select('*').eq('tenant_id', tenantId);
-
-                        if (selectedMonth) {
-                            const y = selectedMonth.split('-')[0];
-                            const m = selectedMonth.split('-')[1];
-                            const lastDay = new Date(y, parseInt(m), 0).getDate();
-                            tcQuery = tcQuery.gte('created_at', `${selectedMonth}-01T00:00:00.000Z`).lte('created_at', `${selectedMonth}-${lastDay}T23:59:59.999Z`);
-                            tpQuery = tpQuery.gte('created_at', `${selectedMonth}-01T00:00:00.000Z`).lte('created_at', `${selectedMonth}-${lastDay}T23:59:59.999Z`);
-                        }
+                        // 4. Chart Data
+                        let tcQuery = window.supabaseClient.from('transacciones_clientes').select('*').eq('tenant_id', tenantId).order('created_at');
+                        let tpQuery = window.supabaseClient.from('transacciones_proveedores').select('*').eq('tenant_id', tenantId).order('created_at');
 
                         const { data: transClientes } = await tcQuery;
                         const { data: transProveedores } = await tpQuery;
 
                         const monthlyData = {};
-
                         const getMonthYear = (dateString) => {
                             const d = new Date(dateString);
                             const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -2213,19 +2190,16 @@
                             }
                         });
 
-                        const sortedChartData = Object.values(monthlyData).sort((a, b) => a.Orden - b.Orden);
-                        setChartData(sortedChartData);
+                        setChartData(Object.values(monthlyData).sort((a, b) => a.Orden - b.Orden));
 
-                        // Procesar Costs Data para el gráfico de barras por mes (Fijo vs Variable)
-                        const groupedCosts = {};
-                        (opsCostsData || []).forEach(cost => {
-                            const my = getMonthYear(cost.fecha_gasto);
-                            if (!groupedCosts[my]) groupedCosts[my] = { name: my, Fijos: 0, Variables: 0, Orden: new Date(cost.fecha_gasto).getTime() };
-                            if (cost.categoria === 'Fijo') groupedCosts[my].Fijos += Number(cost.monto);
-                            if (cost.categoria === 'Variable') groupedCosts[my].Variables += Number(cost.monto);
-                        });
-                        const sortedCostsData = Object.values(groupedCosts).sort((a, b) => a.Orden - b.Orden);
-                        setCostsData(sortedCostsData);
+                        // 5. Costs Chart Data
+                        setCostsData(costsSummary?.map(c => ({
+                            name: getMonthYear(c.month + '-02'),
+                            Fijos: Number(c.gastos_fijos),
+                            Variables: Number(c.gastos_variables),
+                            Total: Number(c.total_gastos),
+                            Orden: new Date(c.month + '-01').getTime()
+                        })).sort((a, b) => a.Orden - b.Orden) || []);
 
                     } catch (e) {
                         console.error("Error loading stats", e);
@@ -2235,7 +2209,7 @@
                 };
 
                 loadDashboardData();
-            }, [tenantId, selectedMonth]); // Re-ejecutar cuando cambia fecha
+            }, [tenantId, selectedMonth]);
 
             // Formato Ayuda
             const filterLabel = selectedMonth ? `(Mes ${selectedMonth})` : '';
@@ -2270,7 +2244,7 @@
                         {/* LEFT PANEL: KPIs & Toggles */}
                         <div className="lg:col-span-1 space-y-4">
 
-                            {/* Card 1: Adeudado */}
+                            {/* KPI 1: Adeudado */}
                             <div
                                 onClick={() => setActiveChart(activeChart === 'ADEUDADO' ? 'FLUJO_CAJA' : 'ADEUDADO')}
                                 className={`glass rounded-xl overflow-hidden group relative cursor-pointer transition-all ${activeChart === 'ADEUDADO' ? 'border-2 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] bg-slate-800/80' : 'border border-blue-500/20 hover:border-orange-500/50 hover:bg-slate-800/50'}`}
@@ -2279,68 +2253,73 @@
                                 <div className="p-5">
                                     <div className="flex justify-between items-start mb-2">
                                         <h3 className={`text-sm font-bold uppercase ${activeChart === 'ADEUDADO' ? 'text-orange-400' : 'text-slate-300'}`}>Total Adeudado</h3>
-                                        <button onClick={(e) => { e.stopPropagation(); setShowOwed(!showOwed); }} className={`p-1.5 rounded-lg transition-colors z-10 relative ${showOwed ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
-                                            <Icon name={showOwed ? "eye" : "eye-off"} size={16} />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            {stats.variations?.owed != 0 && (
+                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${Number(stats.variations?.owed) > 0 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                                                    {Number(stats.variations?.owed) > 0 ? '+' : ''}{stats.variations?.owed}%
+                                                </span>
+                                            )}
+                                            <button onClick={(e) => { e.stopPropagation(); setShowOwed(!showOwed); }} className={`p-1.5 rounded-lg transition-colors z-10 relative ${showOwed ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
+                                                <Icon name={showOwed ? "eye" : "eye-off"} size={16} />
+                                            </button>
+                                        </div>
                                     </div>
                                     <p className="text-2xl font-mono font-bold text-white mb-1">
-                                        {isLoading ? '...' : (showOwed ? `$${stats.owed.toLocaleString()}` : '****')}
+                                        {isLoading ? '...' : (showOwed ? `$${(stats.owed || 0).toLocaleString()}` : '****')}
                                     </p>
-                                    <p className="text-[10px] text-slate-400 uppercase flex items-center gap-1"><Icon name="users" size={10} /> Suma de deudas de Clientes {filterLabel}</p>
+                                    <p className="text-[10px] text-slate-400 uppercase flex items-center gap-1"><Icon name="users" size={10} /> Deuda de Clientes {filterLabel}</p>
                                 </div>
                             </div>
 
-                            {/* Card 2: Cobrado */}
-                            <div
-                                onClick={() => setActiveChart(activeChart === 'COBRADO' ? 'FLUJO_CAJA' : 'COBRADO')}
-                                className={`glass rounded-xl overflow-hidden group relative cursor-pointer transition-all ${activeChart === 'COBRADO' ? 'border-2 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] bg-slate-800/80' : 'border border-blue-500/20 hover:border-emerald-500/50 hover:bg-slate-800/50'}`}
-                            >
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-                                <div className="p-5">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className={`text-sm font-bold uppercase ${activeChart === 'COBRADO' ? 'text-emerald-400' : 'text-slate-300'}`}>Total Cobrado</h3>
-                                        <button onClick={(e) => { e.stopPropagation(); setShowCollected(!showCollected); }} className={`p-1.5 rounded-lg transition-colors z-10 relative ${showCollected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
-                                            <Icon name={showCollected ? "eye" : "eye-off"} size={16} />
-                                        </button>
-                                    </div>
-                                    <p className="text-2xl font-mono font-bold text-white mb-1">
-                                        {isLoading ? '...' : (showCollected ? `$${stats.collected.toLocaleString()}` : '****')}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400 uppercase flex items-center gap-1"><Icon name="dollar-sign" size={10} /> Ingresos brutos {filterLabel}</p>
+                            {/* KPI 2: Margen Neto Proyectado */}
+                            <div className="glass rounded-xl overflow-hidden group relative border border-blue-500/20 p-5">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-bl-full -z-10"></div>
+                                <h3 className="text-xs font-bold uppercase text-slate-400 mb-1">Margen Neto Proyectado</h3>
+                                <p className={`text-xl font-mono font-bold ${(stats.margin || 0) >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
+                                    {isLoading ? '...' : `$${(stats.margin || 0).toLocaleString()}`}
+                                </p>
+                                <div className="mt-2 text-[9px] text-slate-500 uppercase leading-tight">
+                                    (Cobrado + Adeudado) - (A Pagar + Gastos)
                                 </div>
                             </div>
 
-                            {/* Card 3: A Pagar */}
-                            <div
-                                onClick={() => setActiveChart(activeChart === 'A_PAGAR' ? 'FLUJO_CAJA' : 'A_PAGAR')}
-                                className={`glass rounded-xl overflow-hidden group relative cursor-pointer transition-all ${activeChart === 'A_PAGAR' ? 'border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] bg-slate-800/80' : 'border border-blue-500/20 hover:border-red-500/50 hover:bg-slate-800/50'}`}
-                            >
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-                                <div className="p-5">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className={`text-sm font-bold uppercase ${activeChart === 'A_PAGAR' ? 'text-red-400' : 'text-slate-300'}`}>Total a Pagar</h3>
-                                        <button onClick={(e) => { e.stopPropagation(); setShowToPay(!showToPay); }} className={`p-1.5 rounded-lg transition-colors z-10 relative ${showToPay ? 'bg-red-500/20 text-red-400' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
-                                            <Icon name={showToPay ? "eye" : "eye-off"} size={16} />
-                                        </button>
-                                    </div>
-                                    <p className="text-2xl font-mono font-bold text-white mb-1">
-                                        {isLoading ? '...' : (showToPay ? `$${stats.toPay.toLocaleString()}` : '****')}
+                            {/* KPI 3: Liquidez Real */}
+                            <div className="glass rounded-xl overflow-hidden group relative border border-emerald-500/30 bg-emerald-500/5 p-5">
+                                <h3 className="text-xs font-bold uppercase text-emerald-400 mb-1">Flujo de Caja Neto</h3>
+                                <p className={`text-xl font-mono font-bold ${(stats.liquidity || 0) >= 0 ? 'text-emerald-100' : 'text-red-400'}`}>
+                                    {isLoading ? '...' : `$${(stats.liquidity || 0).toLocaleString()}`}
+                                </p>
+                                <p className="text-[9px] text-emerald-500/60 uppercase mt-1">Cobrado - (A Pagar + Gastos)</p>
+                            </div>
+
+                            {/* KPI 4: Ratio de Cobertura */}
+                            <div className="glass rounded-xl overflow-hidden group relative border border-orange-500/20 p-5">
+                                <h3 className="text-xs font-bold uppercase text-slate-400 mb-1">Ratio de Cobertura</h3>
+                                <div className="flex items-end gap-2">
+                                    <p className="text-xl font-mono font-bold text-white">
+                                        {isLoading ? '...' : `${stats.coverage || 0}x`}
                                     </p>
-                                    <p className="text-[10px] text-slate-400 uppercase flex items-center gap-1"><Icon name="truck" size={10} /> Deudas a Proveedores {filterLabel}</p>
+                                    <span className="text-[10px] text-slate-500 mb-1">Meses de Op.</span>
                                 </div>
+                                <p className="text-[9px] text-slate-500 uppercase mt-1">Adeudado / Gasto Mensual</p>
                             </div>
 
                             {/* Card 4: Costos */}
                             <div
-                                onClick={() => setActiveChart(activeChart === 'COSTOS' ? 'FLUJO_CAJA' : 'COSTOS')}
-                                className={`glass rounded-xl overflow-hidden group relative mt-8 cursor-pointer transition-all p-5 flex flex-col items-center justify-center ${activeChart === 'COSTOS' ? 'border-2 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.4)] bg-blue-900/40' : 'border border-blue-500/30 hover:border-blue-400/80 hover:bg-blue-900/30'}`}
+                                onClick={() => setActiveChart('COSTOS')}
+                                className={`glass rounded-xl overflow-hidden group relative mt-4 cursor-pointer transition-all p-5 flex flex-col ${activeChart === 'COSTOS' ? 'border-2 border-blue-400 bg-blue-900/40' : 'border border-blue-500/30 hover:border-blue-400/80 hover:bg-blue-900/30'}`}
                             >
-                                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/5 via-transparent to-transparent -z-10"></div>
-                                <h3 className={`text-sm font-bold uppercase mb-2 ${activeChart === 'COSTOS' ? 'text-white' : 'text-blue-300'}`}>Costos Operativos</h3>
-                                <p className="text-xl font-mono font-bold text-blue-100 mb-1">
-                                    {isLoading ? '...' : `$${stats.costs.toLocaleString()}`}
+                                <div className="flex justify-between items-center mb-1">
+                                    <h3 className={`text-xs font-bold uppercase ${activeChart === 'COSTOS' ? 'text-white' : 'text-blue-300'}`}>Gastos del Mes</h3>
+                                    {stats.variations?.costs != 0 && (
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${Number(stats.variations?.costs) > 0 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                                            {Number(stats.variations?.costs) > 0 ? '+' : ''}{stats.variations?.costs}%
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xl font-mono font-bold text-blue-100">
+                                    {isLoading ? '...' : `$${(stats.costs || 0).toLocaleString()}`}
                                 </p>
-                                <p className="text-[10px] text-blue-300/60 uppercase text-center flex items-center gap-1"><Icon name="zap" size={10} /> Gasto histórico fijo y variable {filterLabel}</p>
                             </div>
 
                         </div>
@@ -2402,22 +2381,20 @@
                                     <window.Recharts.ResponsiveContainer width="100%" height="100%">
                                         <window.Recharts.PieChart>
                                             <window.Recharts.Pie
-                                                data={[
-                                                    { name: 'Cobrado Exitosamente', value: stats.collected, fill: '#10b981' },
-                                                    { name: 'Pendiente de Cobro', value: stats.owed, fill: '#f97316' }
-                                                ]}
+                                                data={stats.aging?.length > 0 ? stats.aging : [{ name: 'Sin deuda', value: 1, fill: '#1e293b' }]}
                                                 cx="50%" cy="50%"
                                                 innerRadius={100} outerRadius={140}
                                                 paddingAngle={5}
-                                                dataKey="value"
-                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                dataKey="amount"
+                                                nameKey="range"
+                                                label={({ range, percent }) => `${range} ${(percent * 100).toFixed(0)}%`}
                                             >
                                                 {
-                                                    [
-                                                        { name: 'Cobrado', fill: '#10b981' },
-                                                        { name: 'Adeudado', fill: '#f97316' }
-                                                    ].map((entry, index) => (
-                                                        <window.Recharts.Cell key={`cell-${index}`} fill={entry.fill} />
+                                                    (stats.aging || []).map((entry, index) => (
+                                                        <window.Recharts.Cell
+                                                            key={`cell-${index}`}
+                                                            fill={entry.range === '0-30 días' ? '#10b981' : entry.range === '31-60 días' ? '#f59e0b' : '#ef4444'}
+                                                        />
                                                     ))
                                                 }
                                             </window.Recharts.Pie>
@@ -2429,7 +2406,7 @@
                                     <window.Recharts.ResponsiveContainer width="100%" height="100%">
                                         <window.Recharts.BarChart
                                             data={[
-                                                { name: 'Balance Histórico Actual', "Te Deben (Clientes)": stats.owed, "Vos Debés (Proveedores)": stats.toPay }
+                                                { name: 'Balance Actual', "Te Deben (Clientes)": stats.owed, "Vos Debés (Proveedores)": stats.toPay }
                                             ]}
                                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                         >
@@ -2446,7 +2423,7 @@
                                     costsData.length === 0 ? (
                                         <div className="text-center text-slate-500">
                                             <Icon name="x-circle" size={48} className="mx-auto opacity-30 mb-4" />
-                                            <span className="block text-sm">No hay costos registrados en la base de datos.</span>
+                                            <span className="block text-sm">No hay costos registrados recientemente.</span>
                                         </div>
                                     ) : (
                                         <window.Recharts.ResponsiveContainer width="100%" height="100%">
@@ -2458,6 +2435,7 @@
                                                 <window.Recharts.Legend />
                                                 <window.Recharts.Bar dataKey="Fijos" fill="#9333ea" radius={[4, 4, 0, 0]} />
                                                 <window.Recharts.Bar dataKey="Variables" fill="#d97706" radius={[4, 4, 0, 0]} />
+                                                <window.Recharts.ReferenceLine y={stats.breakEven} label="Punto de Equilibrio" stroke="#ef4444" strokeDasharray="3 3" />
                                             </window.Recharts.BarChart>
                                         </window.Recharts.ResponsiveContainer>
                                     )
