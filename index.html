@@ -2747,7 +2747,22 @@
                 if (!newEmail || !newPass) return;
                 setIsInviting(true);
                 try {
-                    // SignUp de Supabase Auth
+                    // Primero intentamos agregar si el usuario ya existe en Supabase Auth
+                    // Esto arregla el bug donde usuarios previamente eliminados no podían volver a agregarse (Pantalla azul)
+                    const { data: userExists, error: rpcError } = await window.supabaseClient.rpc('admin_add_user_to_tenant', {
+                        target_email: newEmail,
+                        target_role: newRole
+                    });
+
+                    if (userExists) {
+                        window.addToast("Usuario existente agregado al equipo exitosamente.", 'success');
+                        setNewEmail('');
+                        setNewPass('');
+                        fetchUsers();
+                        return;
+                    }
+
+                    // Si no existía, creamos un nuevo usuario con SignUp
                     const { data, error } = await window.supabaseClient.auth.signUp({
                         email: newEmail,
                         password: newPass,
@@ -2767,7 +2782,7 @@
                     fetchUsers();
                 } catch (err) {
                     console.error(err);
-                    window.addToast(err.message, 'error');
+                    window.addToast(err.message || "Error al crear usuario", 'error');
                 } finally {
                     setIsInviting(false);
                 }
