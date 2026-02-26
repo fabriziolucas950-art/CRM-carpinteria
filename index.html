@@ -112,7 +112,8 @@
                 { id: 'suppliers', label: 'Proveedores', icon: 'truck', roles: ['admin', 'editor'] },
                 { id: 'costs', label: 'Costos Operativos', icon: 'receipt', roles: ['admin', 'editor'], special: true },
                 { id: 'statistics', label: 'Estadísticas', icon: 'pie-chart', roles: ['admin'], special: true },
-                { id: 'users', label: 'Equipo', icon: 'user-cog', roles: ['admin'] }
+                { id: 'users', label: 'Equipo', icon: 'user-cog', roles: ['admin'] },
+                { id: 'settings', label: 'Mi Empresa', icon: 'settings', roles: ['admin'] }
             ];
 
             const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
@@ -2908,6 +2909,75 @@
             );
         };
 
+        // --- Tenant Settings ---
+        const TenantSettings = ({ tenantId, tenantData, setTenantData }) => {
+            const [formData, setFormData] = useState({ name: '', contact_email: '', contact_phone: '', logo_url: '' });
+            const [isSaving, setIsSaving] = useState(false);
+
+            useEffect(() => {
+                if (tenantData) setFormData({
+                    name: tenantData.name || '',
+                    contact_email: tenantData.contact_email || '',
+                    contact_phone: tenantData.contact_phone || '',
+                    logo_url: tenantData.logo_url || ''
+                });
+            }, [tenantData]);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setIsSaving(true);
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .from('tenants')
+                        .update({ ...formData })
+                        .eq('id', tenantId)
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    setTenantData(data);
+                    window.addToast('Configuración actualizada', 'success');
+                } catch (err) {
+                    console.error(err);
+                    window.addToast('Error al actualizar: ' + err.message, 'error');
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            return (
+                <div className="p-4 md:p-8 max-w-2xl mx-auto pb-20">
+                    <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400 mb-2">Mi Empresa</h2>
+                    <p className="text-slate-400 text-sm mb-8">Personaliza la información de tu carpintería.</p>
+
+                    <form onSubmit={handleSubmit} className="glass p-6 rounded-2xl shadow-xl border border-slate-700/50 space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">Nombre de la Empresa</label>
+                            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-blue-500 transition-all text-sm text-slate-200" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">Email de Contacto</label>
+                                <input type="email" value={formData.contact_email} onChange={e => setFormData({ ...formData, contact_email: e.target.value })} className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-blue-500 transition-all text-sm text-slate-200" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">Teléfono de Contacto</label>
+                                <input type="text" value={formData.contact_phone} onChange={e => setFormData({ ...formData, contact_phone: e.target.value })} className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-blue-500 transition-all text-sm text-slate-200" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">URL del Logo (Opcional)</label>
+                            <input type="url" value={formData.logo_url} onChange={e => setFormData({ ...formData, logo_url: e.target.value })} placeholder="https://ejemplo.com/logo.png" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-blue-500 transition-all text-sm text-slate-200 mb-2" />
+                            {formData.logo_url && <img src={formData.logo_url} alt="Logo preview" className="h-16 mt-2 rounded bg-white/10 p-1 object-contain" />}
+                        </div>
+                        <button type="submit" disabled={isSaving} className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+                            {isSaving ? <div className="animate-spin h-5 w-5 border-2 border-white/30 border-t-white rounded-full"></div> : <Icon name="save" size={18} />} Guardar Cambios
+                        </button>
+                    </form>
+                </div>
+            );
+        };
+
         window.addToast = (message, type = 'info') => {
             window.dispatchEvent(new CustomEvent('show-toast', { detail: { message, type } }));
         };
@@ -3012,6 +3082,7 @@
         const App = () => {
             const [session, setSession] = useState(null);
             const [tenantId, setTenantId] = useState(null);
+            const [tenantData, setTenantData] = useState(null);
             const [userRole, setUserRole] = useState('viewer');
             const [isCheckingSession, setIsCheckingSession] = useState(true);
 
@@ -3068,6 +3139,11 @@
                     if (data) {
                         setTenantId(data.tenant_id);
                         setUserRole(data.role || 'viewer');
+
+                        // Cargar datos del tenant
+                        const { data: tData } = await window.supabaseClient.from('tenants').select('*').eq('id', data.tenant_id).single();
+                        if (tData) setTenantData(tData);
+
                         setIsCheckingSession(false);
                     } else {
                         // Reintento breve para asegurar que el trigger terminó
@@ -3076,6 +3152,8 @@
                             if (retryData) {
                                 setTenantId(retryData.tenant_id);
                                 setUserRole(retryData.role || 'viewer');
+                                const { data: retryTData } = await window.supabaseClient.from('tenants').select('*').eq('id', retryData.tenant_id).single();
+                                if (retryTData) setTenantData(retryTData);
                             }
                             setIsCheckingSession(false);
                         }, 1500);
@@ -3120,10 +3198,14 @@
                                     <Icon name={sidebarOpen ? "chevron-left" : "menu"} size={24} />
                                 </button>
                                 <div className="flex items-center gap-2">
-                                    <div className="bg-blue-600 p-1.5 rounded-lg">
-                                        <Icon name="hammer" size={20} />
-                                    </div>
-                                    <span className="font-bold tracking-tight text-white hidden sm:inline">Fabrizio Admin</span>
+                                    {tenantData?.logo_url ? (
+                                        <img src={tenantData.logo_url} alt="Logo" className="max-h-8 max-w-[120px] object-contain rounded" style={{ height: '32px' }} />
+                                    ) : (
+                                        <div className="bg-blue-600 p-1.5 rounded-lg">
+                                            <Icon name="hammer" size={20} />
+                                        </div>
+                                    )}
+                                    <span className="font-bold tracking-tight text-white hidden sm:inline">{tenantData?.name || 'Fabrizio Admin'}</span>
                                 </div>
                             </div>
 
@@ -3141,11 +3223,12 @@
                         {(tab === 'costs' && ['admin', 'editor'].includes(userRole)) && <OperativeCosts tenantId={tenantId} />}
                         {(tab === 'statistics' && userRole === 'admin') && <Statistics tenantId={tenantId} />}
                         {(tab === 'users' && userRole === 'admin') && <UserManagement tenantId={tenantId} />}
+                        {(tab === 'settings' && userRole === 'admin') && <TenantSettings tenantId={tenantId} tenantData={tenantData} setTenantData={setTenantData} />}
 
                         {/* Fallback for unauthorized access */}
-                        {['quoter', 'prices', 'costs', 'statistics', 'users'].includes(tab) &&
+                        {['quoter', 'prices', 'costs', 'statistics', 'users', 'settings'].includes(tab) &&
                             !((['quoter', 'prices', 'costs'].includes(tab) && ['admin', 'editor'].includes(userRole)) ||
-                                (['statistics', 'users'].includes(tab) && userRole === 'admin')) && (
+                                (['statistics', 'users', 'settings'].includes(tab) && userRole === 'admin')) && (
                                 <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-slate-400 gap-4">
                                     <Icon name="lock" size={48} className="text-slate-600" />
                                     <h2 className="text-xl font-bold">Acceso Restringido</h2>
