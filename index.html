@@ -108,7 +108,6 @@
 
             const menuItems = [
                 { id: 'dashboard', label: 'Inicio', icon: 'layout-grid', roles: ['admin', 'editor', 'viewer'] },
-                { id: 'agenda', label: 'Agenda', icon: 'calendar', roles: ['admin', 'editor'] },
                 { id: 'clients', label: 'Clientes', icon: 'users', roles: ['admin', 'editor', 'viewer'] },
                 { id: 'quoter', label: 'Cotizador', icon: 'file-text', roles: ['admin', 'editor'] }
             ];
@@ -3293,7 +3292,6 @@
                         </div>
 
                                                 {tab === 'dashboard' && <Dashboard tenantId={tenantId} setTab={setTab} />}
-                        {tab === 'agenda' && <SupplierManager suppliers={suppliers} setSuppliers={setSuppliers} tenantId={tenantId} />}
                         {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} tenantId={tenantId} />}
                         {(tab === 'quoter' && ['admin', 'editor'].includes(userRole)) && <Quoter clients={clients} setClients={setClients} tenantId={tenantId} />}
                         {(tab === 'prices' && ['admin', 'editor'].includes(userRole)) && <PriceList tenantId={tenantId} />}
@@ -3367,5 +3365,6 @@
 </body>
 
 </html>
+
 
 
