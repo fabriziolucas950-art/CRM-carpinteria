@@ -104,19 +104,25 @@
 
         // --- Layout Components ---
         const Sidebar = ({ currentTab, setTab, isOpen, setIsOpen, onLogout, userRole = 'viewer' }) => {
+            const [adminOpen, setAdminOpen] = useState(true);
+
             const menuItems = [
-                { id: 'dashboard', label: 'Inicio', icon: 'home', roles: ['admin', 'editor', 'viewer'] },
+                { id: 'dashboard', label: 'Inicio', icon: 'layout-grid', roles: ['admin', 'editor', 'viewer'] },
+                { id: 'agenda', label: 'Agenda', icon: 'calendar', roles: ['admin', 'editor'] },
                 { id: 'clients', label: 'Clientes', icon: 'users', roles: ['admin', 'editor', 'viewer'] },
-                { id: 'quoter', label: 'Cotizador', icon: 'file-text', roles: ['admin', 'editor'] },
-                { id: 'prices', label: 'Lista de Precios', icon: 'list', roles: ['admin', 'editor'] },
-                { id: 'suppliers', label: 'Proveedores', icon: 'truck', roles: ['admin', 'editor'] },
-                { id: 'costs', label: 'Costos Operativos', icon: 'receipt', roles: ['admin', 'editor'], special: true },
-                { id: 'statistics', label: 'Estadísticas', icon: 'pie-chart', roles: ['admin'], special: true },
-                { id: 'users', label: 'Equipo', icon: 'user-cog', roles: ['admin'] },
-                { id: 'settings', label: 'Mi Empresa', icon: 'settings', roles: ['admin'] }
+                { id: 'quoter', label: 'Cotizador', icon: 'file-text', roles: ['admin', 'editor'] }
             ];
 
-            const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
+            const adminItems = [
+                { id: 'prices', label: 'Lista de Precios', icon: 'tag', roles: ['admin', 'editor'] },
+                { id: 'suppliers', label: 'Proveedores', icon: 'truck', roles: ['admin', 'editor'] },
+                { id: 'costs', label: 'Costos Operativos', icon: 'trending-down', roles: ['admin', 'editor'] },
+                { id: 'statistics', label: 'Estadísticas', icon: 'bar-chart-2', roles: ['admin'] },
+                { id: 'users', label: 'Equipo', icon: 'users', roles: ['admin'] }
+            ];
+
+            const filteredMain = menuItems.filter(item => item.roles.includes(userRole));
+            const filteredAdmin = adminItems.filter(item => item.roles.includes(userRole));
 
             return (
                 <>
@@ -128,38 +134,91 @@
                         ></div>
                     )}
 
-                    <div className={`w-64 h-screen glass fixed left-0 top-0 flex flex-col p-4 z-[90] transition-all duration-300 transform 
-                        ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+                                        <div className={`w-72 h-screen fixed left-0 top-0 flex flex-col p-6 z-[90] transition-all duration-300 transform 
+                        ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} style={{ background: 'rgba(30, 41, 59, 0.6)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255, 255, 255, 0.05)' }}>
 
-                        <div className="flex justify-between items-center mb-10 px-2">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-slate-100 p-1.5 rounded-lg flex items-center justify-center" style={{ width: '40px', height: '40px' }}>
-                                    <img src="data:image/png;base64,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" alt="Logo" className="w-full h-full object-contain" />
+                        <div className="flex justify-between items-center mb-8 px-2 mt-2">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-slate-900 rounded-xl flex items-center justify-center font-black tracking-tighter shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] border border-slate-700/50" style={{ width: '48px', height: '48px', fontSize: '22px' }}>
+                                    <span className="text-white">F</span><span className="text-blue-500">A</span>
                                 </div>
-                                <h1 className="font-bold text-xl tracking-tight">Fabrizio<span className="text-blue-500 text-sm block font-normal">Admin</span></h1>
+                                <div className="flex flex-col">
+                                    <h1 className="font-bold text-lg text-white tracking-tight leading-tight">Fabrizio Admin</h1>
+                                    <span className="text-slate-400 text-[13px] font-medium mt-0.5">Gestión de Muebles</span>
+                                </div>
                             </div>
                             <button onClick={() => setIsOpen(false)} className="lg:hidden p-1 text-slate-400">
                                 <Icon name="x" size={24} />
                             </button>
                         </div>
 
-                        <nav className="space-y-2 flex-grow">
-                            {filteredItems.map(item => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => { setTab(item.id); setIsOpen(false); }}
-                                    className={`sidebar-item w-full flex items-center gap-3 p-3 rounded-lg transition-all 
-                                        ${currentTab === item.id ? 'active' : ''} 
-                                        ${item.special ? 'bg-orange-600/20 text-orange-400 hover:bg-orange-600/30' : ''}`}
-                                >
-                                    <Icon name={item.icon} /> {item.label}
-                                </button>
-                            ))}
+                        <nav className="flex-grow overflow-y-auto pr-2">
+                            <ul className="space-y-1.5 mt-2">
+                                {filteredMain.map(item => (
+                                    <li key={item.id}>
+                                        <button
+                                            onClick={() => { setTab(item.id); setIsOpen(false); }}
+                                            className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all font-medium text-[15px]
+                                                ${currentTab === item.id
+                                                    ? 'bg-blue-600/20 text-blue-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
+                                                    : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'}`}
+                                        >
+                                            <div className="flex items-center gap-3.5 w-full relative">
+                                                {currentTab === item.id && (
+                                                    <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-400 rounded-r-md"></div>
+                                                )}
+                                                <Icon name={item.icon} size={20} className={currentTab === item.id ? 'text-blue-400' : 'text-slate-400'} />
+                                                {item.label}
+                                            </div>
+                                        </button>
+                                    </li>
+                                ))}
+
+                                {filteredAdmin.length > 0 && (
+                                    <li className="pt-2">
+                                        <button
+                                            onClick={() => setAdminOpen(!adminOpen)}
+                                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-[15px] text-slate-200 
+                                                ${adminOpen ? 'bg-slate-800/80 shadow-inner' : 'hover:bg-slate-800/50'}`}
+                                        >
+                                            <div className="flex items-center gap-3.5">
+                                                <Icon name="folder" size={20} className="text-slate-400" />
+                                                Administración
+                                            </div>
+                                            <Icon name={adminOpen ? "chevron-up" : "chevron-down"} size={16} className="text-slate-500" />
+                                        </button>
+
+                                        {adminOpen && (
+                                            <ul className="mt-1.5 space-y-1 relative before:absolute before:inset-y-0 before:left-[23px] before:w-px before:from-slate-700/50 before:to-transparent before:bg-gradient-to-b pl-2">
+                                                {filteredAdmin.map(item => (
+                                                    <li key={item.id}>
+                                                        <button
+                                                            onClick={() => { setTab(item.id); setIsOpen(false); }}
+                                                            className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all font-medium text-[14px]
+                                                                ${currentTab === item.id
+                                                                    ? 'bg-blue-600/10 text-blue-100'
+                                                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'}`}
+                                                        >
+                                                            <div className="ml-5 flex items-center gap-3.5">
+                                                                <Icon name={item.icon} size={18} className={currentTab === item.id ? 'text-blue-400' : 'text-slate-500'} />
+                                                                {item.label}
+                                                            </div>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </li>
+                                )}
+                            </ul>
                         </nav>
 
-                        <div className="mt-auto border-t border-slate-700 pt-4">
-                            <button onClick={onLogout} className="sidebar-item w-full flex items-center gap-3 p-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
-                                <Icon name="log-out" /> Salir
+                        <div className="mt-auto pt-6 pb-4">
+                            <button
+                                onClick={onLogout}
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition-colors shadow-lg shadow-red-500/20"
+                            >
+                                <Icon name="log-out" size={20} className="rotate-0 text-white" /> Salir
                             </button>
                         </div>
                     </div>
@@ -3307,3 +3366,4 @@
 </body>
 
 </html>
+
