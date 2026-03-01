@@ -775,7 +775,7 @@
                                                         </div>
                                                     )}
                                                     <div className="flex gap-2">
-                                                        <button onClick={() => setEditingClient(c)} className="p-2 glass rounded-lg hover:bg-slate-500/20 text-slate-400" title="Editar Cliente"><Icon name="edit-2" /></button>
+                                                        <button onClick={() => setEditingClient(c)} className="p-2 glass rounded-lg hover:bg-slate-500/20 text-slate-400" title="Editar Cliente"><Icon name="edit" /></button>
                                                         <a href={c.phone ? `https://wa.me/${c.phone.replace(/\D/g, '')}` : '#'} target={c.phone ? "_blank" : "_self"} className="p-2 glass rounded-lg hover:bg-green-500/20 text-green-400" title="WhatsApp"><Icon name="message-circle" /></a>
                                                         <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.address || ''} ${c.city || ''}`)}`} target="_blank" className="p-2 glass rounded-lg hover:bg-blue-500/20 text-blue-400" title="Google Maps"><Icon name="map" /></a>
                                                         <button onClick={() => deleteClient(c.id)} className="p-2 glass rounded-lg hover:bg-red-500/20 text-red-400" title="Eliminar Cliente"><Icon name="trash-2" /></button>
@@ -892,7 +892,7 @@
                                                                             </div>
                                                                             <div className="flex gap-1.5 flex-wrap justify-end">
                                                                                 <button onClick={() => setEditingBudget({ ...b, client_id: c.id })} className="flex items-center gap-1.5 bg-slate-600/20 text-slate-400 hover:bg-slate-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1" title="Editar Presupuesto">
-                                                                                    <Icon name="edit-2" size={12} /> Editar
+                                                                                    <Icon name="edit" size={12} /> Editar
                                                                                 </button>
                                                                                 <button onClick={openPaymentModal} className="flex items-center gap-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1">
                                                                                     <Icon name="plus" size={12} /> Pago
@@ -1829,7 +1829,7 @@
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 glass p-6 rounded-2xl h-fit">
                             <h3 className="text-xl font-semibold mb-6 text-blue-400 flex items-center gap-2">
-                                <Icon name={newSupplier.id ? "edit-2" : "user-plus"} />
+                                <Icon name={newSupplier.id ? "edit" : "user-plus"} />
                                 {newSupplier.id ? 'Editar Proveedor' : 'Nuevo Proveedor'}
                             </h3>
                             <div className="space-y-4">
@@ -1913,7 +1913,7 @@
                                                 <div className="flex gap-2">
                                                     <a href={`tel:${s.phone.replace(/\D/g, '')}`} className="p-2 glass rounded-lg hover:bg-slate-500/20 text-slate-300" title="Llamar"><Icon name="phone" /></a>
                                                     <a href={`https://wa.me/${s.phone.replace(/\D/g, '')}`} target="_blank" className="p-2 glass rounded-lg hover:bg-green-500/20 text-green-400" title="WhatsApp"><Icon name="message-circle" /></a>
-                                                    <button onClick={() => setNewSupplier({ id: s.id, name: s.name, phone: s.phone, supplies: s.supplies })} className="p-2 glass rounded-lg hover:bg-blue-500/20 text-blue-400" title="Editar"><Icon name="edit-2" /></button>
+                                                    <button onClick={() => setNewSupplier({ id: s.id, name: s.name, phone: s.phone, supplies: s.supplies })} className="p-2 glass rounded-lg hover:bg-blue-500/20 text-blue-400" title="Editar"><Icon name="edit" /></button>
                                                     <button onClick={async () => {
                                                         if (await window.confirmAsync('¿Eliminar proveedor?')) {
                                                             try {
