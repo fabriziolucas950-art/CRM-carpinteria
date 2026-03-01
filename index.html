@@ -1455,7 +1455,7 @@
         };
 
         const SupplierManager = ({ suppliers, setSuppliers, tenantId }) => {
-            const [newSupplier, setNewSupplier] = useState({ name: '', phone: '', supplies: '' });
+            const [newSupplier, setNewSupplier] = useState({ id: null, name: '', phone: '', supplies: '' });
             const [isLoading, setIsLoading] = useState(false);
             const [transactionModal, setTransactionModal] = useState({ isOpen: false, supplierId: null, type: 'DEUDA' });
             const [transactionData, setTransactionData] = useState({ amount: '', desc: '', date: new Date().toISOString().split('T')[0], dueDate: '', receiptFile: null });
@@ -1778,27 +1778,45 @@
                 setIsLoading(true);
 
                 try {
-                    const { data, error } = await window.supabaseClient
-                        .from('proveedores')
-                        .insert([
-                            {
-                                tenant_id: tenantId,
+                    if (newSupplier.id) {
+                        const { error } = await window.supabaseClient
+                            .from('proveedores')
+                            .update({
                                 name: newSupplier.name,
                                 phone: newSupplier.phone,
                                 supplies: newSupplier.supplies
-                                // debts array omitted for now since Supabase lacks proper JSON handling in this simple setup
-                            }
-                        ])
-                        .select();
+                            })
+                            .eq('id', newSupplier.id);
 
-                    if (error) throw error;
+                        if (error) throw error;
 
-                    if (data && data.length > 0) {
-                        setSuppliers([...suppliers, data[0]]);
-                        setNewSupplier({ name: '', phone: '', supplies: '' });
+                        setSuppliers(suppliers.map(s => s.id === newSupplier.id ? { ...s, name: newSupplier.name, phone: newSupplier.phone, supplies: newSupplier.supplies } : s));
+                        setNewSupplier({ id: null, name: '', phone: '', supplies: '' });
+                        window.addToast("Proveedor actualizado con éxito", 'success');
+                    } else {
+                        const { data, error } = await window.supabaseClient
+                            .from('proveedores')
+                            .insert([
+                                {
+                                    tenant_id: tenantId,
+                                    name: newSupplier.name,
+                                    phone: newSupplier.phone,
+                                    supplies: newSupplier.supplies
+                                    // debts array omitted for now since Supabase lacks proper JSON handling in this simple setup
+                                }
+                            ])
+                            .select();
+
+                        if (error) throw error;
+
+                        if (data && data.length > 0) {
+                            setSuppliers([...suppliers, data[0]]);
+                            setNewSupplier({ id: null, name: '', phone: '', supplies: '' });
+                            window.addToast("Proveedor agregado con éxito", 'success');
+                        }
                     }
                 } catch (error) {
-                    console.error('Error al agregar proveedor:', error);
+                    console.error('Error al guardar proveedor:', error);
                     window.addToast("Error al guardar en Supabase: " + error.message, 'error');
                 } finally {
                     setIsLoading(false);
@@ -1810,7 +1828,10 @@
                     <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Agenda de Proveedores</h2>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 glass p-6 rounded-2xl h-fit">
-                            <h3 className="text-xl font-semibold mb-6">Nuevo Proveedor</h3>
+                            <h3 className="text-xl font-semibold mb-6 text-blue-400 flex items-center gap-2">
+                                <Icon name={newSupplier.id ? "edit-2" : "user-plus"} />
+                                {newSupplier.id ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+                            </h3>
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-xs uppercase text-slate-400 block mb-1">Nombre / Empresa</label>
@@ -1824,9 +1845,16 @@
                                     <label className="text-xs uppercase text-slate-400 block mb-1">Insumos (Qué trae)</label>
                                     <input value={newSupplier.supplies} onChange={e => setNewSupplier({ ...newSupplier, supplies: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="Placas, Herrajes..." />
                                 </div>
-                                <button onClick={addSupplier} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
-                                    <Icon name="truck" /> {isLoading ? 'Guardando...' : 'Guardar Proveedor'}
-                                </button>
+                                <div className="flex gap-2 pt-2">
+                                    <button onClick={addSupplier} disabled={isLoading || !newSupplier.name} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
+                                        <Icon name={newSupplier.id ? "save" : "plus"} /> {isLoading ? 'Guardando...' : (newSupplier.id ? 'Actualizar' : 'Guardar')}
+                                    </button>
+                                    {newSupplier.id && (
+                                        <button onClick={() => setNewSupplier({ id: null, name: '', phone: '', supplies: '' })} className="bg-slate-700 hover:bg-slate-600 p-3 rounded-lg font-bold transition-all text-slate-300" title="Cancelar Edición">
+                                            <Icon name="x" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -1885,6 +1913,7 @@
                                                 <div className="flex gap-2">
                                                     <a href={`tel:${s.phone.replace(/\D/g, '')}`} className="p-2 glass rounded-lg hover:bg-slate-500/20 text-slate-300" title="Llamar"><Icon name="phone" /></a>
                                                     <a href={`https://wa.me/${s.phone.replace(/\D/g, '')}`} target="_blank" className="p-2 glass rounded-lg hover:bg-green-500/20 text-green-400" title="WhatsApp"><Icon name="message-circle" /></a>
+                                                    <button onClick={() => setNewSupplier({ id: s.id, name: s.name, phone: s.phone, supplies: s.supplies })} className="p-2 glass rounded-lg hover:bg-blue-500/20 text-blue-400" title="Editar"><Icon name="edit-2" /></button>
                                                     <button onClick={async () => {
                                                         if (await window.confirmAsync('¿Eliminar proveedor?')) {
                                                             try {
@@ -1892,7 +1921,7 @@
                                                                 setSuppliers(suppliers.filter(prev => prev.id !== s.id));
                                                             } catch (e) { window.addToast("Error eliminando: " + e.message, 'error'); }
                                                         }
-                                                    }} className="p-2 glass rounded-lg hover:bg-red-500/20 text-red-400"><Icon name="trash-2" /></button>
+                                                    }} className="p-2 glass rounded-lg hover:bg-red-500/20 text-red-400" title="Eliminar"><Icon name="trash-2" /></button>
                                                 </div>
                                             </div>
 
