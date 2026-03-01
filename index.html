@@ -133,10 +133,10 @@
                         ></div>
                     )}
 
-                                                            <div className={`w-64 h-screen fixed left-0 top-0 flex flex-col p-4 z-[90] transition-all duration-300 transform 
+                    <div className={`w-64 h-screen fixed left-0 top-0 flex flex-col p-4 z-[90] transition-all duration-300 transform 
                         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} style={{ background: 'rgba(30, 41, 59, 0.6)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255, 255, 255, 0.05)' }}>
 
-                                                <div className="flex justify-between items-center mb-8 px-2 mt-2">
+                        <div className="flex justify-between items-center mb-8 px-2 mt-2">
                             <div className="flex items-center gap-3">
                                 <div className="bg-slate-100 p-1 rounded-lg flex items-center justify-center border border-white/20" style={{ width: '40px', height: '40px' }}>
                                     <img src="data:image/png;base64,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" alt="Logo" className="w-full h-full object-contain" />
@@ -1460,6 +1460,18 @@
             const [transactionModal, setTransactionModal] = useState({ isOpen: false, supplierId: null, type: 'DEUDA' });
             const [transactionData, setTransactionData] = useState({ amount: '', desc: '', date: new Date().toISOString().split('T')[0], dueDate: '', receiptFile: null });
             const [isSubmittingTx, setIsSubmittingTx] = useState(false);
+            const [supplierProducts, setSupplierProducts] = useState([]);
+            const [selectedProduct, setSelectedProduct] = useState('');
+            const [productQuantity, setProductQuantity] = useState(1);
+            const [productUnitPrice, setProductUnitPrice] = useState(0);
+
+            // Carga Masiva (Bulk Purchase) States
+            const [bulkModal, setBulkModal] = useState({ isOpen: false, supplierId: null });
+            const [bulkItems, setBulkItems] = useState([{ id: Date.now(), producto: '', cantidad: 1, precio_unidad: 0, precio_total: 0 }]);
+            const [bulkDate, setBulkDate] = useState(new Date().toISOString().split('T')[0]);
+            const [bulkDesc, setBulkDesc] = useState('');
+            const [bulkReceiptFile, setBulkReceiptFile] = useState(null);
+
             const [searchTerm, setSearchTerm] = useState('');
             const [sortOption, setSortOption] = useState('recent');
 
@@ -1505,6 +1517,75 @@
                     }
                     return b.id - a.id;
                 });
+
+            const fetchSupplierProducts = async (supplierId) => {
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .from('insumos_precios')
+                        .select('*')
+                        .eq('proveedor_id', supplierId)
+                        .eq('tenant_id', tenantId);
+                    if (error) throw error;
+                    setSupplierProducts(data || []);
+                } catch (err) {
+                    console.error("Error fetching supplier products:", err);
+                }
+            };
+
+            useEffect(() => {
+                if (transactionModal.isOpen && transactionModal.type === 'DEUDA' && transactionModal.supplierId) {
+                    fetchSupplierProducts(transactionModal.supplierId);
+                } else {
+                    setSupplierProducts([]);
+                    setSelectedProduct('');
+                    setProductQuantity(1);
+                    setProductUnitPrice(0);
+                }
+            }, [transactionModal.isOpen, transactionModal.supplierId, transactionModal.type, tenantId]);
+
+            const handleProductChange = (e) => {
+                const prodId = e.target.value;
+                setSelectedProduct(prodId);
+                if (prodId) {
+                    const prod = supplierProducts.find(p => p.id === parseInt(prodId));
+                    if (prod) {
+                        const price = Number(prod.precio_unidad) || 0;
+                        setProductUnitPrice(price);
+                        const amount = price * productQuantity;
+                        const desc = `Compra: ${prod.producto} x${productQuantity}`;
+                        setTransactionData(prev => ({ ...prev, amount: amount.toString(), desc }));
+                    }
+                } else {
+                    setProductUnitPrice(0);
+                    setTransactionData(prev => ({ ...prev, amount: '0' }));
+                }
+            };
+
+            const handleQuantityChange = (e) => {
+                const qty = parseInt(e.target.value) || 1;
+                setProductQuantity(qty);
+                if (selectedProduct) {
+                    const prod = supplierProducts.find(p => p.id === parseInt(selectedProduct));
+                    if (prod) {
+                        const amount = productUnitPrice * qty;
+                        const desc = `Compra: ${prod.producto} x${qty}`;
+                        setTransactionData(prev => ({ ...prev, amount: amount.toString(), desc }));
+                    }
+                }
+            };
+
+            const handleUnitPriceChange = (e) => {
+                const price = parseFloat(e.target.value) || 0;
+                setProductUnitPrice(price);
+                if (selectedProduct) {
+                    const prod = supplierProducts.find(p => p.id === parseInt(selectedProduct));
+                    if (prod) {
+                        const amount = price * productQuantity;
+                        const desc = `Compra: ${prod.producto} x${productQuantity}`;
+                        setTransactionData(prev => ({ ...prev, amount: amount.toString(), desc }));
+                    }
+                }
+            };
 
             const uploadSupplierReceipt = async (file, supplierId) => {
                 try {
@@ -1568,8 +1649,104 @@
                     setSuppliers(updated);
                     setTransactionModal({ isOpen: false, supplierId: null, type: 'DEUDA' });
                     setTransactionData({ amount: '', desc: '', date: new Date().toISOString().split('T')[0], dueDate: '', receiptFile: null });
+                    setSelectedProduct('');
+                    setProductQuantity(1);
+                    setProductUnitPrice(0);
                 } catch (err) {
                     window.addToast("Error al guardar transacción: " + err.message, 'error');
+                } finally {
+                    setIsSubmittingTx(false);
+                }
+            };
+
+            const openBulkModal = (supplierId) => {
+                setBulkModal({ isOpen: true, supplierId });
+                fetchSupplierProducts(supplierId);
+                setBulkItems([{ id: Date.now(), producto: '', cantidad: 1, precio_unidad: 0, precio_total: 0 }]);
+                setBulkDate(new Date().toISOString().split('T')[0]);
+                setBulkDesc('Carga de Factura / Remito');
+                setBulkReceiptFile(null);
+            };
+
+            const handleCloseBulkModal = () => {
+                setBulkModal({ isOpen: false, supplierId: null });
+                setSupplierProducts([]);
+            };
+
+            const handleBulkItemChange = (id, field, value) => {
+                setBulkItems(bulkItems.map(item => {
+                    if (item.id === id) {
+                        const updated = { ...item, [field]: value };
+                        if (field === 'producto') {
+                            const prod = supplierProducts.find(p => p.producto === value);
+                            if (prod) {
+                                updated.precio_unidad = Number(prod.precio_unidad) || 0;
+                                updated.precio_total = updated.cantidad * updated.precio_unidad;
+                            }
+                        }
+                        if (field === 'cantidad') {
+                            updated.cantidad = Number(value) || 0;
+                            updated.precio_total = updated.cantidad * updated.precio_unidad;
+                        }
+                        if (field === 'precio_unidad') {
+                            updated.precio_unidad = Number(value) || 0;
+                            updated.precio_total = updated.cantidad * updated.precio_unidad;
+                        }
+                        return updated;
+                    }
+                    return item;
+                }));
+            };
+
+            const handleAddBulkItem = () => setBulkItems([...bulkItems, { id: Date.now(), producto: '', cantidad: 1, precio_unidad: 0, precio_total: 0 }]);
+            const handleRemoveBulkItem = (id) => setBulkItems(bulkItems.filter(i => i.id !== id));
+            const totalBulkAmount = bulkItems.reduce((acc, item) => acc + item.precio_total, 0);
+
+            const handleBulkSubmit = async (e) => {
+                e.preventDefault();
+                if (totalBulkAmount <= 0) return;
+                setIsSubmittingTx(true);
+                try {
+                    const s = suppliers.find(sup => sup.id === bulkModal.supplierId);
+                    if (!s) throw new Error("Proveedor no encontrado");
+
+                    let receiptUrl = null;
+                    if (bulkReceiptFile) {
+                        receiptUrl = await uploadSupplierReceipt(bulkReceiptFile, s.id);
+                    }
+
+                    const numAmount = Math.abs(parseFloat(totalBulkAmount));
+                    const { data: insertedTx, error: txError } = await window.supabaseClient.from('transacciones_proveedores').insert([{
+                        tenant_id: tenantId,
+                        supplier_id: s.id,
+                        tipo: 'DEUDA',
+                        monto: numAmount,
+                        descripcion: bulkDesc || "Compra Masiva",
+                        fecha_operacion: bulkDate,
+                        fecha_vencimiento: null,
+                        comprobante_url: receiptUrl
+                    }]).select();
+
+                    if (txError) throw txError;
+
+                    const newDebt = {
+                        id: insertedTx[0].id || Date.now(),
+                        amount: numAmount,
+                        desc: bulkDesc || "Compra Masiva",
+                        date: bulkDate,
+                        dueDate: null,
+                        receiptUrl: receiptUrl
+                    };
+                    const updatedArray = [...(s.debts || []), newDebt];
+
+                    const { error: updateError } = await window.supabaseClient.from('proveedores').update({ debts: updatedArray }).eq('id', s.id);
+                    if (updateError && !updateError.message.includes('column "debts" of relation')) throw updateError;
+
+                    setSuppliers(suppliers.map(prov => prov.id === s.id ? { ...prov, debts: updatedArray } : prov));
+                    handleCloseBulkModal();
+                    window.addToast("Compra masiva registrada con éxito", 'success');
+                } catch (err) {
+                    window.addToast("Error: " + err.message, 'error');
                 } finally {
                     setIsSubmittingTx(false);
                 }
@@ -1728,11 +1905,14 @@
                                                     </span>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                                                    <button onClick={() => openBulkModal(s.id)} className="flex-1 md:flex-none bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors flex items-center justify-center gap-2">
+                                                        <Icon name="file-plus" size={14} /> Cargar Compra
+                                                    </button>
                                                     <button onClick={() => openTransactionModal(s.id, 'DEUDA')} className="flex-1 md:flex-none bg-orange-500/20 text-orange-400 hover:bg-orange-500/40 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors flex items-center justify-center gap-2">
-                                                        <Icon name="trending-up" size={14} /> Sumar Deuda
+                                                        <Icon name="plus" size={14} /> Deuda Libre
                                                     </button>
                                                     <button onClick={() => openTransactionModal(s.id, 'PAGO')} className="flex-1 md:flex-none bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors flex items-center justify-center gap-2">
-                                                        <Icon name="trending-down" size={14} /> Registrar Pago
+                                                        <Icon name="minus" size={14} /> Registrar Pago
                                                     </button>
                                                 </div>
                                             </div>
@@ -1780,6 +1960,50 @@
                                     {transactionModal.type === 'DEUDA' ? 'Facturación / Nueva Deuda' : 'Pago Emitido'}
                                 </h3>
                                 <form onSubmit={handleTransactionSubmit} className="space-y-4">
+                                    {transactionModal.type === 'DEUDA' && supplierProducts.length > 0 && (
+                                        <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 space-y-3 mb-4">
+                                            <div>
+                                                <label className="text-xs uppercase text-slate-400 block mb-1">Carga Rápida de Insumo</label>
+                                                <select
+                                                    value={selectedProduct}
+                                                    onChange={handleProductChange}
+                                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-blue-500 outline-none"
+                                                >
+                                                    <option value="">Seleccionar insumo...</option>
+                                                    {supplierProducts.map(p => (
+                                                        <option key={p.id} value={p.id}>
+                                                            {p.producto} (${(p.precio_unidad || 0).toLocaleString()})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {selectedProduct && (
+                                                <div className="flex items-center gap-4 mt-3 bg-slate-800 p-3 rounded-lg border border-slate-700/50">
+                                                    <div className="flex-1">
+                                                        <label className="text-[10px] uppercase text-slate-400 block mb-1">Precio x U. ($)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={productUnitPrice}
+                                                            onChange={handleUnitPriceChange}
+                                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-center font-mono text-blue-400 focus:border-blue-500 outline-none"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <label className="text-[10px] uppercase text-slate-400 block mb-1">Cantidad</label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            value={productQuantity}
+                                                            onChange={handleQuantityChange}
+                                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-center font-mono text-white focus:border-blue-500 outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-xs uppercase text-slate-400 block mb-1">Concepto</label>
@@ -1789,7 +2013,7 @@
                                             <label className="text-xs uppercase text-slate-400 block mb-1">Monto ($)</label>
                                             <div className="relative">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
-                                                <input type="number" step="0.01" value={transactionData.amount} onChange={e => setTransactionData({ ...transactionData, amount: e.target.value })} className="w-full bg-slate-800 border border-transparent rounded-lg p-3 pl-7 outline-none focus:border-blue-500 font-mono font-bold text-white text-right text-sm" required placeholder="0.00" />
+                                                <input type="number" step="0.01" value={transactionData.amount} onChange={e => setTransactionData({ ...transactionData, amount: e.target.value })} className="w-full bg-slate-800 border border-transparent rounded-lg p-3 pl-7 outline-none focus:border-blue-500 font-mono font-bold text-white text-right text-sm" required placeholder="0.00" disabled={transactionModal.type === 'DEUDA' && selectedProduct !== ''} />
                                             </div>
                                         </div>
                                     </div>
@@ -1813,6 +2037,107 @@
                                         <button type="button" onClick={() => setTransactionModal({ isOpen: false, supplierId: null, type: 'DEUDA' })} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl font-bold transition-colors" disabled={isSubmittingTx}>Cancelar</button>
                                         <button type="submit" disabled={isSubmittingTx} className={`flex-1 p-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 transition-colors ${transactionModal.type === 'DEUDA' ? 'bg-orange-600 hover:bg-orange-500' : 'bg-emerald-600 hover:bg-emerald-500'} disabled:opacity-50`}>
                                             {isSubmittingTx ? <><Icon name="loader" size={18} className="animate-spin" /> Guardando...</> : <><Icon name="save" size={18} /> Guardar Movimiento</>}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Carga Masiva (Bulk Purchase) */}
+                    {bulkModal.isOpen && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
+                            <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-2xl shadow-2xl my-auto relative">
+                                <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-400">
+                                    <Icon name="file-text" />
+                                    Carga Masiva de Compra / Remito
+                                </h3>
+                                <div className="text-sm text-slate-400 mb-6">Agrega múltiples productos a la misma factura para sumarlos al saldo del proveedor.</div>
+                                <form onSubmit={handleBulkSubmit} className="space-y-4">
+                                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 space-y-3">
+                                        {bulkItems.map((item, index) => (
+                                            <div key={item.id} className="flex flex-wrap md:flex-nowrap items-end gap-3 pb-3 border-b border-slate-700/50 last:border-0 last:pb-0">
+                                                <div className="w-full md:w-auto flex-1">
+                                                    <label className="text-[10px] uppercase text-slate-500 block mb-1">Producto</label>
+                                                    <select
+                                                        value={item.producto}
+                                                        onChange={(e) => handleBulkItemChange(item.id, 'producto', e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-blue-500 outline-none"
+                                                    >
+                                                        <option value="">Seleccionar del catálogo...</option>
+                                                        {supplierProducts.map(p => (
+                                                            <option key={p.id} value={p.producto}>
+                                                                {p.producto}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="w-20">
+                                                    <label className="text-[10px] uppercase text-slate-500 block mb-1">Cant.</label>
+                                                    <input
+                                                        type="number" min="1"
+                                                        value={item.cantidad}
+                                                        onChange={(e) => handleBulkItemChange(item.id, 'cantidad', e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-center text-white focus:border-blue-500 outline-none"
+                                                    />
+                                                </div>
+                                                <div className="w-24">
+                                                    <label className="text-[10px] uppercase text-slate-500 block mb-1">P. Unit ($)</label>
+                                                    <input
+                                                        type="number" min="0" step="0.01"
+                                                        value={item.precio_unidad}
+                                                        onChange={(e) => handleBulkItemChange(item.id, 'precio_unidad', e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-center font-mono text-blue-400 focus:border-blue-500 outline-none"
+                                                    />
+                                                </div>
+                                                <div className="w-24">
+                                                    <label className="text-[10px] uppercase text-slate-500 block mb-1">Subt. ($)</label>
+                                                    <input
+                                                        type="number" readOnly
+                                                        value={item.precio_total}
+                                                        className="w-full bg-transparent border border-transparent rounded-lg p-2 text-sm text-center font-bold font-mono text-orange-400 outline-none cursor-not-allowed"
+                                                    />
+                                                </div>
+                                                {bulkItems.length > 1 && (
+                                                    <button type="button" onClick={() => handleRemoveBulkItem(item.id)} className="p-2 mb-0.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                                                        <Icon name="trash-2" size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        <div className="pt-2">
+                                            <button type="button" onClick={handleAddBulkItem} className="text-sm font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
+                                                <Icon name="plus-circle" size={16} /> Agregar otra línea
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Concepto Factura (Opcional)</label>
+                                            <input type="text" value={bulkDesc} onChange={e => setBulkDesc(e.target.value)} className="w-full bg-slate-800 border border-transparent rounded-lg p-3 outline-none focus:border-blue-500 text-white text-sm" placeholder="Ej: Factura AA-0001" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Monto Total Factura ($)</label>
+                                            <div className="w-full bg-slate-800/80 border border-slate-700 rounded-lg p-3 text-right font-mono font-bold text-orange-400 text-lg cursor-not-allowed">
+                                                ${totalBulkAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Fecha Op.</label>
+                                            <input type="date" value={bulkDate} onChange={e => setBulkDate(e.target.value)} className="w-full bg-slate-800 border border-transparent rounded-lg p-2.5 outline-none focus:border-blue-500 text-slate-300 text-sm" required />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase text-slate-400 block mb-1">Archivo de Respaldo <span className="text-[9px] opacity-70">(Opcional)</span></label>
+                                            <input type="file" onChange={e => setBulkReceiptFile(e.target.files[0])} className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30 file:transition-colors bg-slate-800 rounded-lg pr-3" />
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3 pt-4 border-t border-slate-800 mt-6">
+                                        <button type="button" onClick={handleCloseBulkModal} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl font-bold transition-colors" disabled={isSubmittingTx}>Cancelar</button>
+                                        <button type="submit" disabled={isSubmittingTx || totalBulkAmount <= 0} className={`flex-1 p-3 rounded-xl font-bold text-white flex justify-center items-center gap-2 transition-colors bg-blue-600 hover:bg-blue-500 disabled:opacity-50`}>
+                                            {isSubmittingTx ? <><Icon name="loader" size={18} className="animate-spin" /> Guardando...</> : <><Icon name="save" size={18} /> Cargar Factura En Cuenta</>}
                                         </button>
                                     </div>
                                 </form>
@@ -2536,6 +2861,7 @@
 
         const PriceList = ({ tenantId }) => {
             const [items, setItems] = useState([]);
+            const [suppliers, setSuppliers] = useState([]);
             const [isLoading, setIsLoading] = useState(true);
             const [isSaving, setIsSaving] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
@@ -2543,23 +2869,31 @@
 
             useEffect(() => {
                 if (!tenantId) return;
-                const fetchItems = async () => {
+                const fetchData = async () => {
                     setIsLoading(true);
                     try {
-                        const { data, error } = await window.supabaseClient
-                            .from('insumos_precios')
-                            .select('*')
-                            .eq('tenant_id', tenantId);
-                        if (error) throw error;
-                        setItems(data.map(d => ({ ...d, _localId: d.id })));
+                        const [itemsRes, suppliersRes] = await Promise.all([
+                            window.supabaseClient
+                                .from('insumos_precios')
+                                .select('*')
+                                .eq('tenant_id', tenantId),
+                            window.supabaseClient
+                                .from('proveedores')
+                                .select('id, name')
+                                .eq('tenant_id', tenantId)
+                        ]);
+                        if (itemsRes.error) throw itemsRes.error;
+                        if (suppliersRes.error) throw suppliersRes.error;
+                        setItems(itemsRes.data.map(d => ({ ...d, _localId: d.id, proveedor_id: d.proveedor_id || '' })));
+                        setSuppliers(suppliersRes.data || []);
                     } catch (err) {
                         console.error("Fetch error", err);
-                        window.addToast("Error al cargar lista de precios.", 'error');
+                        window.addToast("Error al cargar datos.", 'error');
                     } finally {
                         setIsLoading(false);
                     }
                 };
-                fetchItems();
+                fetchData();
             }, [tenantId]);
 
             const handleAddRow = () => {
@@ -2567,7 +2901,8 @@
                     id: null,
                     _localId: Date.now().toString(),
                     tenant_id: tenantId,
-                    proveedor: '',
+                    proveedor_id: '',
+                    proveedor: '', // Keep for text fallback/UI if needed, but primary is DB
                     producto: '',
                     unidad_compra: '',
                     cantidad: 1,
@@ -2578,7 +2913,48 @@
             };
 
             const handleChange = (localId, field, value) => {
-                setItems(items.map(item => item._localId === localId ? { ...item, [field]: value } : item));
+                if (field === 'proveedor_id') {
+                    const sup = suppliers.find(s => s.id === parseInt(value));
+                    setItems(items.map(item => {
+                        if (item._localId === localId) {
+                            const newItem = { ...item, proveedor_id: value, proveedor: sup ? sup.name : '' };
+                            return newItem;
+                        }
+                        return item;
+                    }));
+                } else if (field === 'producto') {
+                    setItems(items.map(item => {
+                        if (item._localId === localId) {
+                            const newItem = { ...item, producto: value };
+                            // Find the last known unit price for this specific product and supplier
+                            const pastItem = items.find(i => i.proveedor_id === item.proveedor_id && i.producto === value && i._localId !== localId && i.precio_unidad > 0);
+                            if (pastItem) {
+                                newItem.precio_unidad = pastItem.precio_unidad;
+                                newItem.precio_total = (Number(item.cantidad) || 1) * Number(pastItem.precio_unidad);
+                            }
+                            return newItem;
+                        }
+                        return item;
+                    }));
+                } else if (field === 'cantidad') {
+                    setItems(items.map(item => {
+                        if (item._localId === localId) {
+                            const qty = Number(value) || 0;
+                            return { ...item, cantidad: value, precio_total: qty * (Number(item.precio_unidad) || 0) };
+                        }
+                        return item;
+                    }));
+                } else if (field === 'precio_unidad') {
+                    setItems(items.map(item => {
+                        if (item._localId === localId) {
+                            const pU = Number(value) || 0;
+                            return { ...item, precio_unidad: value, precio_total: (Number(item.cantidad) || 1) * pU };
+                        }
+                        return item;
+                    }));
+                } else {
+                    setItems(items.map(item => item._localId === localId ? { ...item, [field]: value } : item));
+                }
             };
 
             const handleDeleteRow = async (localId, dbId) => {
@@ -2606,6 +2982,7 @@
                         const payload = {
                             tenant_id: tenantId,
                             proveedor: item.proveedor,
+                            proveedor_id: item.proveedor_id ? parseInt(item.proveedor_id) : null,
                             producto: item.producto,
                             unidad_compra: item.unidad_compra,
                             cantidad: Number(item.cantidad) || 1,
@@ -2722,11 +3099,23 @@
                                     ) : filteredItems.map((item, idx) => {
                                         return (
                                             <tr key={item._localId || idx} className="hover:bg-slate-800/30 transition-colors group">
-                                                <td className="p-2">
-                                                    <input type="text" value={item.proveedor} onChange={e => handleChange(item._localId, 'proveedor', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors text-xs" placeholder="Lupo..." />
+                                                <td className="p-2 min-w-[150px]">
+                                                    <select value={item.proveedor_id || ''} onChange={e => handleChange(item._localId, 'proveedor_id', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors text-xs appearance-none">
+                                                        <option value="">Seleccione Proveedor</option>
+                                                        {suppliers.map(s => (
+                                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                                        ))}
+                                                    </select>
                                                 </td>
                                                 <td className="p-2 min-w-[200px]">
-                                                    <input type="text" value={item.producto} onChange={e => handleChange(item._localId, 'producto', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors font-medium text-xs" placeholder="Melamina Blanca..." />
+                                                    <input
+                                                        type="text"
+                                                        value={item.producto}
+                                                        onChange={e => handleChange(item._localId, 'producto', e.target.value)}
+                                                        className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors font-medium text-xs disabled:opacity-50"
+                                                        placeholder="Melamina Blanca 18mm..."
+                                                        disabled={!item.proveedor_id}
+                                                    />
                                                 </td>
                                                 <td className="p-2">
                                                     <input type="text" value={item.unidad_compra} onChange={e => handleChange(item._localId, 'unidad_compra', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-400 focus:bg-slate-800 transition-colors text-[10px]" placeholder="Placa 18mm..." />
@@ -3291,7 +3680,7 @@
                             </div>
                         </div>
 
-                                                {tab === 'dashboard' && <Dashboard tenantId={tenantId} setTab={setTab} />}
+                        {tab === 'dashboard' && <Dashboard tenantId={tenantId} setTab={setTab} />}
                         {tab === 'clients' && <ClientManager clients={clients} setClients={setClients} tenantId={tenantId} />}
                         {(tab === 'quoter' && ['admin', 'editor'].includes(userRole)) && <Quoter clients={clients} setClients={setClients} tenantId={tenantId} />}
                         {(tab === 'prices' && ['admin', 'editor'].includes(userRole)) && <PriceList tenantId={tenantId} />}
@@ -3365,6 +3754,3 @@
 </body>
 
 </html>
-
-
-
