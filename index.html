@@ -1455,7 +1455,8 @@
         };
 
         const SupplierManager = ({ suppliers, setSuppliers, tenantId }) => {
-            const [newSupplier, setNewSupplier] = useState({ id: null, name: '', phone: '', supplies: '' });
+            const [newSupplier, setNewSupplier] = useState({ name: '', phone: '', supplies: '' });
+            const [editSupplierModal, setEditSupplierModal] = useState({ isOpen: false, data: { id: null, name: '', phone: '', supplies: '' } });
             const [isLoading, setIsLoading] = useState(false);
             const [transactionModal, setTransactionModal] = useState({ isOpen: false, supplierId: null, type: 'DEUDA' });
             const [transactionData, setTransactionData] = useState({ amount: '', desc: '', date: new Date().toISOString().split('T')[0], dueDate: '', receiptFile: null });
@@ -1773,47 +1774,53 @@
                 }
             };
 
+            const updateSupplierModal = async () => {
+                const { id, name, phone, supplies } = editSupplierModal.data;
+                if (!name) return;
+                setIsLoading(true);
+
+                try {
+                    const { error } = await window.supabaseClient
+                        .from('proveedores')
+                        .update({ name, phone, supplies })
+                        .eq('id', id);
+
+                    if (error) throw error;
+
+                    setSuppliers(suppliers.map(s => s.id === id ? { ...s, name, phone, supplies } : s));
+                    setEditSupplierModal({ isOpen: false, data: { id: null, name: '', phone: '', supplies: '' } });
+                    window.addToast("Proveedor actualizado con éxito", 'success');
+                } catch (error) {
+                    console.error('Error al actualizar proveedor:', error);
+                    window.addToast("Error al guardar en Supabase: " + error.message, 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
             const addSupplier = async () => {
                 if (!newSupplier.name) return;
                 setIsLoading(true);
 
                 try {
-                    if (newSupplier.id) {
-                        const { error } = await window.supabaseClient
-                            .from('proveedores')
-                            .update({
+                    const { data, error } = await window.supabaseClient
+                        .from('proveedores')
+                        .insert([
+                            {
+                                tenant_id: tenantId,
                                 name: newSupplier.name,
                                 phone: newSupplier.phone,
                                 supplies: newSupplier.supplies
-                            })
-                            .eq('id', newSupplier.id);
+                            }
+                        ])
+                        .select();
 
-                        if (error) throw error;
+                    if (error) throw error;
 
-                        setSuppliers(suppliers.map(s => s.id === newSupplier.id ? { ...s, name: newSupplier.name, phone: newSupplier.phone, supplies: newSupplier.supplies } : s));
-                        setNewSupplier({ id: null, name: '', phone: '', supplies: '' });
-                        window.addToast("Proveedor actualizado con éxito", 'success');
-                    } else {
-                        const { data, error } = await window.supabaseClient
-                            .from('proveedores')
-                            .insert([
-                                {
-                                    tenant_id: tenantId,
-                                    name: newSupplier.name,
-                                    phone: newSupplier.phone,
-                                    supplies: newSupplier.supplies
-                                    // debts array omitted for now since Supabase lacks proper JSON handling in this simple setup
-                                }
-                            ])
-                            .select();
-
-                        if (error) throw error;
-
-                        if (data && data.length > 0) {
-                            setSuppliers([...suppliers, data[0]]);
-                            setNewSupplier({ id: null, name: '', phone: '', supplies: '' });
-                            window.addToast("Proveedor agregado con éxito", 'success');
-                        }
+                    if (data && data.length > 0) {
+                        setSuppliers([...suppliers, data[0]]);
+                        setNewSupplier({ name: '', phone: '', supplies: '' });
+                        window.addToast("Proveedor agregado con éxito", 'success');
                     }
                 } catch (error) {
                     console.error('Error al guardar proveedor:', error);
@@ -1828,9 +1835,9 @@
                     <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Agenda de Proveedores</h2>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 glass p-6 rounded-2xl h-fit">
-                            <h3 className="text-xl font-semibold mb-6 text-blue-400 flex items-center gap-2">
-                                <Icon name={newSupplier.id ? "edit" : "user-plus"} />
-                                {newSupplier.id ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+                            <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                                <Icon name="user-plus" />
+                                Nuevo Proveedor
                             </h3>
                             <div className="space-y-4">
                                 <div>
@@ -1845,16 +1852,9 @@
                                     <label className="text-xs uppercase text-slate-400 block mb-1">Insumos (Qué trae)</label>
                                     <input value={newSupplier.supplies} onChange={e => setNewSupplier({ ...newSupplier, supplies: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="Placas, Herrajes..." />
                                 </div>
-                                <div className="flex gap-2 pt-2">
-                                    <button onClick={addSupplier} disabled={isLoading || !newSupplier.name} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
-                                        <Icon name={newSupplier.id ? "save" : "plus"} /> {isLoading ? 'Guardando...' : (newSupplier.id ? 'Actualizar' : 'Guardar')}
-                                    </button>
-                                    {newSupplier.id && (
-                                        <button onClick={() => setNewSupplier({ id: null, name: '', phone: '', supplies: '' })} className="bg-slate-700 hover:bg-slate-600 p-3 rounded-lg font-bold transition-all text-slate-300" title="Cancelar Edición">
-                                            <Icon name="x" />
-                                        </button>
-                                    )}
-                                </div>
+                                <button onClick={addSupplier} disabled={isLoading || !newSupplier.name} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
+                                    <Icon name="plus" /> {isLoading ? 'Guardando...' : 'Guardar Proveedor'}
+                                </button>
                             </div>
                         </div>
 
@@ -1914,8 +1914,10 @@
                                                     <a href={`tel:${s.phone.replace(/\D/g, '')}`} className="p-2 glass rounded-lg hover:bg-slate-500/20 text-slate-300" title="Llamar"><Icon name="phone" /></a>
                                                     <a href={`https://wa.me/${s.phone.replace(/\D/g, '')}`} target="_blank" className="p-2 glass rounded-lg hover:bg-green-500/20 text-green-400" title="WhatsApp"><Icon name="message-circle" /></a>
                                                     <button onClick={() => {
-                                                        setNewSupplier({ id: s.id, name: s.name || '', phone: s.phone || '', supplies: s.supplies || '' });
-                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                        setEditSupplierModal({
+                                                            isOpen: true,
+                                                            data: { id: s.id, name: s.name || '', phone: s.phone || '', supplies: s.supplies || '' }
+                                                        });
                                                     }} className="p-2 glass rounded-lg hover:bg-blue-500/20 text-blue-400" title="Editar"><Icon name="edit" /></button>
                                                     <button onClick={async () => {
                                                         if (await window.confirmAsync('¿Eliminar proveedor?')) {
@@ -1982,6 +1984,47 @@
                             )}
                         </div>
                     </div>
+
+                    {/* Modal Editar Proveedor */}
+                    {editSupplierModal.isOpen && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+                            <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
+                                <h3 className="text-xl font-bold flex items-center gap-2 text-blue-400 mb-2">
+                                    <Icon name="edit" /> Editar Proveedor
+                                </h3>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-400 block mb-1">Nombre / Empresa</label>
+                                    <input
+                                        value={editSupplierModal.data.name}
+                                        onChange={e => setEditSupplierModal({ ...editSupplierModal, data: { ...editSupplierModal.data, name: e.target.value } })}
+                                        className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-400 block mb-1">WhatsApp / Teléfono</label>
+                                    <input
+                                        value={editSupplierModal.data.phone}
+                                        onChange={e => setEditSupplierModal({ ...editSupplierModal, data: { ...editSupplierModal.data, phone: e.target.value } })}
+                                        className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-400 block mb-1">Insumos (Qué trae)</label>
+                                    <input
+                                        value={editSupplierModal.data.supplies}
+                                        onChange={e => setEditSupplierModal({ ...editSupplierModal, data: { ...editSupplierModal.data, supplies: e.target.value } })}
+                                        className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none"
+                                    />
+                                </div>
+                                <div className="flex gap-4 pt-4 border-t border-slate-700/50">
+                                    <button onClick={() => setEditSupplierModal({ isOpen: false, data: { id: null, name: '', phone: '', supplies: '' } })} className="flex-1 bg-slate-800 hover:bg-slate-700 p-3 rounded-lg font-bold transition-all text-white">Cancelar</button>
+                                    <button onClick={updateSupplierModal} disabled={isLoading || !editSupplierModal.data.name} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 text-white">
+                                        <Icon name="save" /> {isLoading ? '...' : 'Guardar Cambios'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Modal Transacción Proveedor */}
                     {transactionModal.isOpen && (
