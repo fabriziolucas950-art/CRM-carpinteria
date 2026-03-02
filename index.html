@@ -1454,6 +1454,71 @@
             );
         };
 
+        const TagInput = ({ value, onChange, placeholder, suggestedTags = [] }) => {
+            const [inputValue, setInputValue] = useState('');
+            const tags = value ? value.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+            const addTag = (tag) => {
+                const cleanTag = tag.trim();
+                // Avoid empty tags or duplicates
+                if (cleanTag && !tags.some(t => t.toLowerCase() === cleanTag.toLowerCase())) {
+                    onChange([...tags, cleanTag].join(', '));
+                }
+                setInputValue('');
+            };
+
+            const removeTag = (tagToRemove) => {
+                onChange(tags.filter(t => t !== tagToRemove).join(', '));
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addTag(inputValue);
+                }
+            };
+
+            return (
+                <div className="space-y-2">
+                    <div className="bg-slate-800 border-none rounded-lg p-2 flex flex-wrap gap-2 items-center focus-within:ring-2 ring-blue-500 transition-all min-h-[42px]">
+                        {tags.map((tag, idx) => (
+                            <span key={idx} className="bg-blue-500/20 border border-blue-500/30 text-blue-400 px-2 py-1 rounded-md flex items-center gap-1.5 text-xs font-medium">
+                                {tag}
+                                <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-400 transition-colors p-0.5 rounded-full hover:bg-red-500/10">
+                                    <Icon name="x" size={10} />
+                                </button>
+                            </span>
+                        ))}
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            onBlur={() => addTag(inputValue)}
+                            placeholder={tags.length === 0 ? placeholder : ''}
+                            className="bg-transparent border-none outline-none text-sm text-white flex-1 min-w-[120px]"
+                        />
+                    </div>
+
+                    {suggestedTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                            <span className="text-[10px] text-slate-500 uppercase mt-1 block font-bold tracking-wider">Historial:</span>
+                            {suggestedTags.filter(t => !tags.some(existing => existing.toLowerCase() === t.toLowerCase())).map((suggestion, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => addTag(suggestion)}
+                                    className="text-[10px] bg-slate-700/50 border border-slate-600 hover:bg-slate-600 hover:border-slate-500 text-slate-300 px-2 py-0.5 rounded transition-all flex items-center gap-1"
+                                >
+                                    <Icon name="plus" size={10} /> {suggestion}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         const SupplierManager = ({ suppliers, setSuppliers, tenantId }) => {
             const [newSupplier, setNewSupplier] = useState({ name: '', phone: '', supplies: '' });
             const [editSupplierModal, setEditSupplierModal] = useState({ isOpen: false, data: { id: null, name: '', phone: '', supplies: '' } });
@@ -1475,6 +1540,20 @@
 
             const [searchTerm, setSearchTerm] = useState('');
             const [sortOption, setSortOption] = useState('recent');
+
+            // Autocomplete global tag extractor
+            const globalSuggestedTags = useMemo(() => {
+                const tagSet = new Set();
+                suppliers.forEach(s => {
+                    if (s.supplies) {
+                        s.supplies.split(',').forEach(tag => {
+                            const trimmed = tag.trim();
+                            if (trimmed) tagSet.add(trimmed);
+                        });
+                    }
+                });
+                return Array.from(tagSet).sort();
+            }, [suppliers]);
 
             const getSupplierTotalDebt = (s) => (s.debts || []).reduce((acc, d) => acc + d.amount, 0);
 
@@ -1850,7 +1929,12 @@
                                 </div>
                                 <div>
                                     <label className="text-xs uppercase text-slate-400 block mb-1">Insumos (Qué trae)</label>
-                                    <input value={newSupplier.supplies} onChange={e => setNewSupplier({ ...newSupplier, supplies: e.target.value })} className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none" placeholder="Placas, Herrajes..." />
+                                    <TagInput
+                                        value={newSupplier.supplies}
+                                        onChange={val => setNewSupplier({ ...newSupplier, supplies: val })}
+                                        placeholder="Ej: Placas (luego Enter)"
+                                        suggestedTags={globalSuggestedTags}
+                                    />
                                 </div>
                                 <button onClick={addSupplier} disabled={isLoading || !newSupplier.name} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 p-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2">
                                     <Icon name="plus" /> {isLoading ? 'Guardando...' : 'Guardar Proveedor'}
@@ -1905,8 +1989,14 @@
                                                     </div>
                                                     <div>
                                                         <h4 className="font-semibold text-lg">{s.name}</h4>
-                                                        <div className="flex flex-col sm:flex-row sm:gap-4 text-xs sm:text-sm text-slate-400">
-                                                            <span className="flex items-center gap-1 text-slate-300 font-medium"><Icon name="package" size={14} /> {s.supplies}</span>
+                                                        <div className="flex flex-col sm:flex-row sm:gap-4 text-xs sm:text-sm text-slate-400 mt-1">
+                                                            <div className="flex flex-wrap gap-1.5 mt-1">
+                                                                {s.supplies ? s.supplies.split(',').map((tag, idx) => (
+                                                                    <span key={idx} className="bg-slate-700/50 border border-slate-600 px-2 py-0.5 rounded text-[10px] text-slate-300 font-medium">
+                                                                        {tag.trim()}
+                                                                    </span>
+                                                                )) : <span className="text-[10px] text-slate-500 italic">Sin insumos registrados</span>}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2010,10 +2100,11 @@
                                 </div>
                                 <div>
                                     <label className="text-xs uppercase text-slate-400 block mb-1">Insumos (Qué trae)</label>
-                                    <input
+                                    <TagInput
                                         value={editSupplierModal.data.supplies}
-                                        onChange={e => setEditSupplierModal({ ...editSupplierModal, data: { ...editSupplierModal.data, supplies: e.target.value } })}
-                                        className="w-full bg-slate-800 border-none rounded-lg p-2 focus:ring-2 ring-blue-500 outline-none"
+                                        onChange={val => setEditSupplierModal({ ...editSupplierModal, data: { ...editSupplierModal.data, supplies: val } })}
+                                        placeholder="Ej: Placas (luego Enter)"
+                                        suggestedTags={globalSuggestedTags}
                                     />
                                 </div>
                                 <div className="flex gap-4 pt-4 border-t border-slate-700/50">
