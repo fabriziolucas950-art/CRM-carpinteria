@@ -3045,7 +3045,7 @@
                                 .eq('tenant_id', tenantId),
                             window.supabaseClient
                                 .from('proveedores')
-                                .select('id, name')
+                                .select('id, name, supplies')
                                 .eq('tenant_id', tenantId)
                         ]);
                         if (itemsRes.error) throw itemsRes.error;
@@ -3083,7 +3083,7 @@
                     const sup = suppliers.find(s => s.id === parseInt(value));
                     setItems(items.map(item => {
                         if (item._localId === localId) {
-                            const newItem = { ...item, proveedor_id: value, proveedor: sup ? sup.name : '' };
+                            const newItem = { ...item, proveedor_id: value, proveedor: sup ? sup.name : '', producto: '' };
                             return newItem;
                         }
                         return item;
@@ -3274,14 +3274,29 @@
                                                     </select>
                                                 </td>
                                                 <td className="p-2 min-w-[200px]">
-                                                    <input
-                                                        type="text"
-                                                        value={item.producto}
-                                                        onChange={e => handleChange(item._localId, 'producto', e.target.value)}
-                                                        className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors font-medium text-xs disabled:opacity-50"
-                                                        placeholder="Melamina Blanca 18mm..."
-                                                        disabled={!item.proveedor_id}
-                                                    />
+                                                    {(() => {
+                                                        const selectedSupplier = suppliers.find(s => s.id === parseInt(item.proveedor_id));
+                                                        const options = selectedSupplier && selectedSupplier.supplies
+                                                            ? selectedSupplier.supplies.split(',').map(s => s.trim()).filter(Boolean)
+                                                            : [];
+                                                        if (item.producto && !options.includes(item.producto)) {
+                                                            options.push(item.producto);
+                                                        }
+
+                                                        return (
+                                                            <select
+                                                                value={item.producto}
+                                                                onChange={e => handleChange(item._localId, 'producto', e.target.value)}
+                                                                className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors font-medium text-xs disabled:opacity-50 appearance-none cursor-pointer"
+                                                                disabled={!item.proveedor_id}
+                                                            >
+                                                                <option value="">{item.proveedor_id ? "Seleccionar insumo" : "Selecciona un proveedor"}</option>
+                                                                {options.map((opt, oIdx) => (
+                                                                    <option key={oIdx} value={opt}>{opt}</option>
+                                                                ))}
+                                                            </select>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td className="p-2">
                                                     <input type="text" value={item.unidad_compra} onChange={e => handleChange(item._localId, 'unidad_compra', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-400 focus:bg-slate-800 transition-colors text-[10px]" placeholder="Placa 18mm..." />
