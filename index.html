@@ -3028,6 +3028,7 @@
         const PriceList = ({ tenantId }) => {
             const [items, setItems] = useState([]);
             const [suppliers, setSuppliers] = useState([]);
+            const [masterProducts, setMasterProducts] = useState([]);
             const [isLoading, setIsLoading] = useState(true);
             const [isSaving, setIsSaving] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
@@ -3038,7 +3039,7 @@
                 const fetchData = async () => {
                     setIsLoading(true);
                     try {
-                        const [itemsRes, suppliersRes] = await Promise.all([
+                        const [itemsRes, suppliersRes, masRes] = await Promise.all([
                             window.supabaseClient
                                 .from('insumos_precios')
                                 .select('*')
@@ -3046,12 +3047,20 @@
                             window.supabaseClient
                                 .from('proveedores')
                                 .select('id, name, supplies')
+                                .eq('tenant_id', tenantId),
+                            window.supabaseClient
+                                .from('maestro_productos')
+                                .select('nombre_sugerido, unidad_predeterminada')
                                 .eq('tenant_id', tenantId)
                         ]);
                         if (itemsRes.error) throw itemsRes.error;
                         if (suppliersRes.error) throw suppliersRes.error;
+                        // Log a warning if maestro_productos errors, but don't fail, maybe table not created yet
+                        if (masRes && masRes.error) console.warn("Error fetching maestro_productos", masRes.error);
+
                         setItems(itemsRes.data.map(d => ({ ...d, _localId: d.id, proveedor_id: d.proveedor_id || '' })));
                         setSuppliers(suppliersRes.data || []);
+                        setMasterProducts(masRes?.data || []);
                     } catch (err) {
                         console.error("Fetch error", err);
                         window.addToast("Error al cargar datos.", 'error');
@@ -3071,6 +3080,7 @@
                     proveedor: '', // Keep for text fallback/UI if needed, but primary is DB
                     producto: '',
                     unidad_compra: '',
+                    unidad_destino: '', // Added duplicated combo box value context locally
                     cantidad: 1,
                     precio_unidad: 0,
                     precio_total: 0
@@ -3078,25 +3088,55 @@
                 setItems([...items, newRow]);
             };
 
+            const handleDuplicateRow = (itemToClone) => {
+                const clonedRow = {
+                    ...itemToClone,
+                    id: null,
+                    _localId: Date.now().toString()
+                };
+                setItems([...items, clonedRow]);
+            };
+
             const handleChange = (localId, field, value) => {
-                if (field === 'proveedor_id') {
-                    const sup = suppliers.find(s => s.id === parseInt(value));
+                if (field === 'proveedor') {
+                    // This creates hybrid searchable selects
+                    const sup = suppliers.find(s => s.name.toLowerCase() === value.toLowerCase());
                     setItems(items.map(item => {
                         if (item._localId === localId) {
-                            const newItem = { ...item, proveedor_id: value, proveedor: sup ? sup.name : '', producto: '' };
-                            return newItem;
+                            return {
+                                ...item,
+                                proveedor: value,
+                                proveedor_id: sup ? sup.id : null,
+                                producto: item.producto // keep product
+                            };
                         }
                         return item;
                     }));
                 } else if (field === 'producto') {
                     setItems(items.map(item => {
                         if (item._localId === localId) {
-                            const newItem = { ...item, producto: value };
+                            const upperValue = value.toUpperCase();
+                            const newItem = { ...item, producto: upperValue };
+
+                            // Find unit in maestro_productos
+                            const masterMatch = masterProducts.find(m => m.nombre_sugerido.toUpperCase() === upperValue);
+                            let newUnit = newItem.unidad_compra;
+                            if (masterMatch && masterMatch.unidad_predeterminada && !newItem.unidad_compra) {
+                                newUnit = masterMatch.unidad_predeterminada;
+                            } else if (!newItem.unidad_compra) {
+                                if (upperValue.includes('PLACA')) newUnit = '$M^2$';
+                                else if (upperValue.includes('CANTO')) newUnit = '$ML$';
+                            }
+                            newItem.unidad_compra = newUnit;
+                            if (!newItem.unidad_destino) newItem.unidad_destino = newUnit; // Sync destination unit initially
+
                             // Find the last known unit price for this specific product and supplier
-                            const pastItem = items.find(i => i.proveedor_id === item.proveedor_id && i.producto === value && i._localId !== localId && i.precio_unidad > 0);
-                            if (pastItem) {
-                                newItem.precio_unidad = pastItem.precio_unidad;
-                                newItem.precio_total = (Number(item.cantidad) || 1) * Number(pastItem.precio_unidad);
+                            const pastItem = items.find(i => i.proveedor_id === item.proveedor_id && i.producto === upperValue && i._localId !== localId && i.precio_total > 0);
+                            if (pastItem && pastItem.precio_total > 0) {
+                                newItem.precio_total = pastItem.precio_total;
+                                // Auto-recalc unit price based on previous total? No, memory should just suggest last "P. COMPRA"
+                                const qty = Number(item.cantidad) || 0;
+                                newItem.precio_unidad = qty > 0 ? Number(pastItem.precio_total) / qty : 0;
                             }
                             return newItem;
                         }
@@ -3106,15 +3146,27 @@
                     setItems(items.map(item => {
                         if (item._localId === localId) {
                             const qty = Number(value) || 0;
-                            return { ...item, cantidad: value, precio_total: qty * (Number(item.precio_unidad) || 0) };
+                            const pTotal = Number(item.precio_total) || 0;
+                            const pUnidad = qty > 0 ? pTotal / qty : 0;
+                            return { ...item, cantidad: value, precio_unidad: pUnidad };
                         }
                         return item;
                     }));
-                } else if (field === 'precio_unidad') {
+                } else if (field === 'precio_total') {
+                    // Reverse calculation from total price to update unit price
                     setItems(items.map(item => {
                         if (item._localId === localId) {
-                            const pU = Number(value) || 0;
-                            return { ...item, precio_unidad: value, precio_total: (Number(item.cantidad) || 1) * pU };
+                            const pT = Number(value) || 0;
+                            const qty = Number(item.cantidad) || 0;
+                            const newPU = qty > 0 ? pT / qty : 0;
+                            return { ...item, precio_total: value, precio_unidad: newPU };
+                        }
+                        return item;
+                    }));
+                } else if (field === 'unidad_compra') {
+                    setItems(items.map(item => {
+                        if (item._localId === localId) {
+                            return { ...item, unidad_compra: value, unidad_destino: item.unidad_destino || value };
                         }
                         return item;
                     }));
@@ -3250,11 +3302,12 @@
                                     <tr className="bg-slate-800/50 border-b border-slate-700 text-[10px] uppercase text-slate-400 font-bold tracking-wider">
                                         <th className="p-3 whitespace-nowrap">Proveedor</th>
                                         <th className="p-3 whitespace-nowrap">Producto</th>
-                                        <th className="p-3 whitespace-nowrap">Unidad Compra</th>
-                                        <th className="p-3 text-right whitespace-nowrap">Cantidad</th>
-                                        <th className="p-3 text-right whitespace-nowrap">Precio x Unidad</th>
-                                        <th className="p-3 text-right whitespace-nowrap">Precio Total</th>
-                                        <th className="p-3 text-center w-10"></th>
+                                        <th className="p-3 whitespace-nowrap text-center">U</th>
+                                        <th className="p-3 text-right whitespace-nowrap">CANT</th>
+                                        <th className="p-3 text-right whitespace-nowrap">P. COMPRA</th>
+                                        <th className="p-3 whitespace-nowrap text-center text-blue-400">U</th>
+                                        <th className="p-3 text-right whitespace-nowrap text-yellow-500">P. UNITARIO</th>
+                                        <th className="p-3 text-center w-20">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800/50 text-sm">
@@ -3263,63 +3316,130 @@
                                             <td colSpan="8" className="p-6 text-center text-slate-500 italic">No hay productos en la lista.</td>
                                         </tr>
                                     ) : filteredItems.map((item, idx) => {
+                                        const isPlaca = item.unidad_compra === '$M^2$' || item.unidad_compra?.toLowerCase() === 'm2';
+                                        const isCanto = item.unidad_compra === '$ML$' || item.unidad_compra?.toLowerCase() === 'ml';
+
+                                        // Generar lista única de unidades usadas
+                                        const defaultUnits = ['$M^2$', '$ML$', '$KG$', '$U$', 'bolsa', 'par'];
+                                        const recordedUnits = new Set(defaultUnits);
+                                        items.forEach(i => {
+                                            if (i.unidad_compra) recordedUnits.add(i.unidad_compra);
+                                            if (i.unidad_destino) recordedUnits.add(i.unidad_destino);
+                                        });
+                                        const uniqueUnitsList = Array.from(recordedUnits).sort();
+
                                         return (
-                                            <tr key={item._localId || idx} className="hover:bg-slate-800/30 transition-colors group">
-                                                <td className="p-2 min-w-[150px]">
-                                                    <select value={item.proveedor_id || ''} onChange={e => handleChange(item._localId, 'proveedor_id', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors text-xs appearance-none">
-                                                        <option value="">Seleccione Proveedor</option>
-                                                        {suppliers.map(s => (
-                                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </td>
+                                            <tr key={item._localId || idx} className={`hover:bg-slate-800/50 transition-colors group ${isPlaca ? 'bg-blue-900/10' : isCanto ? 'bg-orange-900/10' : ''}`}>
                                                 <td className="p-2 min-w-[200px]">
+                                                    <input
+                                                        list={`proveedores-${item._localId}`}
+                                                        value={item.proveedor}
+                                                        onChange={e => handleChange(item._localId, 'proveedor', e.target.value)}
+                                                        placeholder="Ej: Faplac / Escribir nuevo..."
+                                                        className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors text-xs font-medium"
+                                                    />
+                                                    <datalist id={`proveedores-${item._localId}`}>
+                                                        {suppliers.map(s => (
+                                                            <option key={s.id} value={s.name} />
+                                                        ))}
+                                                    </datalist>
+                                                </td>
+                                                <td className="p-2 min-w-[200px] relative">
                                                     {(() => {
                                                         const selectedSupplier = suppliers.find(s => s.id === parseInt(item.proveedor_id));
                                                         const options = selectedSupplier && selectedSupplier.supplies
-                                                            ? selectedSupplier.supplies.split(',').map(s => s.trim()).filter(Boolean)
+                                                            ? selectedSupplier.supplies.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
                                                             : [];
-                                                        if (item.producto && !options.includes(item.producto)) {
-                                                            options.push(item.producto);
-                                                        }
+
+                                                        // Add master products
+                                                        masterProducts.forEach(mp => {
+                                                            const mName = mp.nombre_sugerido.toUpperCase();
+                                                            if (!options.includes(mName)) options.push(mName);
+                                                        });
+
+                                                        const listId = `datalist-productos-${item._localId}`;
 
                                                         return (
-                                                            <select
-                                                                value={item.producto}
-                                                                onChange={e => handleChange(item._localId, 'producto', e.target.value)}
-                                                                className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-200 focus:bg-slate-800 transition-colors font-medium text-xs disabled:opacity-50 appearance-none cursor-pointer"
-                                                                disabled={!item.proveedor_id}
-                                                            >
-                                                                <option value="">{item.proveedor_id ? "Seleccionar insumo" : "Selecciona un proveedor"}</option>
-                                                                {options.map((opt, oIdx) => (
-                                                                    <option key={oIdx} value={opt}>{opt}</option>
-                                                                ))}
-                                                            </select>
+                                                            <>
+                                                                <div className="flex items-center gap-1.5 w-full bg-transparent border border-transparent hover:border-slate-600 focus-within:border-blue-500 rounded p-1.5 focus-within:bg-slate-800 transition-colors">
+                                                                    {item.producto.toUpperCase().includes('PLACA') && (
+                                                                        <Icon name="square" size={14} className="text-blue-400 shrink-0" />
+                                                                    )}
+                                                                    {item.producto.toUpperCase().includes('CANTO') && (
+                                                                        <Icon name="minus" size={14} className="text-orange-400 shrink-0" />
+                                                                    )}
+                                                                    <input
+                                                                        list={listId}
+                                                                        value={item.producto}
+                                                                        placeholder={item.proveedor_id ? "Producto..." : "Selecciona un proveedor"}
+                                                                        onChange={e => handleChange(item._localId, 'producto', e.target.value)}
+                                                                        disabled={!item.proveedor_id}
+                                                                        className="w-full bg-transparent outline-none text-slate-200 font-medium text-xs disabled:opacity-50"
+                                                                    />
+                                                                </div>
+                                                                <datalist id={listId}>
+                                                                    {options.map((opt, oIdx) => (
+                                                                        <option key={oIdx} value={opt} />
+                                                                    ))}
+                                                                </datalist>
+                                                            </>
                                                         );
                                                     })()}
                                                 </td>
-                                                <td className="p-2">
-                                                    <input type="text" value={item.unidad_compra} onChange={e => handleChange(item._localId, 'unidad_compra', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-400 focus:bg-slate-800 transition-colors text-[10px]" placeholder="Placa 18mm..." />
+                                                <td className="p-2 w-24">
+                                                    <input
+                                                        list={`unidad-compra-${item._localId}`}
+                                                        value={item.unidad_compra}
+                                                        onChange={e => handleChange(item._localId, 'unidad_compra', e.target.value)}
+                                                        placeholder="U"
+                                                        className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-400 focus:bg-slate-800 transition-colors text-xs text-center font-medium placeholder:text-slate-600"
+                                                    />
+                                                    <datalist id={`unidad-compra-${item._localId}`}>
+                                                        {uniqueUnitsList.map((u, i) => (
+                                                            <option key={i} value={u} />
+                                                        ))}
+                                                    </datalist>
                                                 </td>
                                                 <td className="p-2 w-24">
                                                     <input type="number" step="0.01" min="0" value={item.cantidad} onChange={e => handleChange(item._localId, 'cantidad', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-slate-300 focus:bg-slate-800 transition-colors text-right font-mono text-xs" />
                                                 </td>
                                                 <td className="p-2 w-32">
-                                                    <div className="relative">
-                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                                        <input type="number" step="0.01" min="0" value={item.precio_unidad} onChange={e => handleChange(item._localId, 'precio_unidad', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 pl-5 outline-none text-white focus:bg-slate-800 transition-colors text-right font-mono font-bold text-xs" />
+                                                    <div className="relative flex items-center">
+                                                        <span className="absolute left-2 text-slate-500">$</span>
+                                                        <input type="number" step="0.01" min="0" value={item.precio_total} onChange={e => handleChange(item._localId, 'precio_total', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 pl-5 outline-none text-indigo-300 focus:bg-slate-800 transition-colors text-right font-mono font-bold text-xs" placeholder="0.00" />
                                                     </div>
                                                 </td>
-                                                <td className="p-2 w-32">
-                                                    <div className="relative">
-                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                                        <input type="number" step="0.01" min="0" value={item.precio_total} onChange={e => handleChange(item._localId, 'precio_total', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 pl-5 outline-none text-indigo-300 focus:bg-slate-800 transition-colors text-right font-mono font-bold text-xs" />
+                                                <td className="p-2 w-24 bg-blue-900/10">
+                                                    <input
+                                                        list={`unidad-destino-${item._localId}`}
+                                                        value={item.unidad_destino || item.unidad_compra}
+                                                        onChange={e => handleChange(item._localId, 'unidad_destino', e.target.value)}
+                                                        placeholder="U"
+                                                        className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-blue-400 focus:bg-slate-800 transition-colors text-xs text-center font-medium placeholder:text-blue-900/50"
+                                                    />
+                                                    <datalist id={`unidad-destino-${item._localId}`}>
+                                                        {uniqueUnitsList.map((u, i) => (
+                                                            <option key={i} value={u} />
+                                                        ))}
+                                                    </datalist>
+                                                </td>
+                                                <td className="p-2 w-32 bg-yellow-900/10">
+                                                    <div className="relative flex items-center bg-yellow-500/10 rounded border border-yellow-500/20 px-2 py-1.5 cursor-not-allowed">
+                                                        <span className="text-yellow-600/70 text-xs">$</span>
+                                                        <div className="w-full text-right font-mono font-bold text-yellow-500 text-xs truncate pl-1" title="Cálculo automático: P. Compra / Cantidad">
+                                                            {Number(item.precio_unidad || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </div>
                                                     </div>
                                                 </td>
-                                                <td className="p-2 text-center">
-                                                    <button onClick={() => handleDeleteRow(item._localId, item.id)} className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors opacity-0 group-hover:opacity-100" title="Eliminar Insumo">
-                                                        <Icon name="trash-2" size={16} />
-                                                    </button>
+                                                <td className="p-2 text-center text-slate-500">
+                                                    <div className="flex gap-1 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => handleDuplicateRow(item)} className="p-1.5 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-colors" title="Duplicar">
+                                                            <Icon name="copy" size={16} />
+                                                        </button>
+                                                        <button onClick={() => handleDeleteRow(item._localId, item.id)} className="p-1.5 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors" title="Eliminar Insumo">
+                                                            <Icon name="trash-2" size={16} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
