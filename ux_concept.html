@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI/UX Concept - Dark/Orange/Blue</title>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Recharts -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.js"></script>
+    <script src="https://unpkg.com/react-is@18.2.0/umd/react-is.production.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.1.9/umd/Recharts.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d0d;
+            /* Negro carbón mate más oscuro */
+            margin: 0;
+            padding: 0;
+        }
+
+        .bg-card {
+            background-color: #1A1A1A;
+            /* Gris muy oscuro */
+        }
+
+        .diagonal-stripes {
+            background-image: repeating-linear-gradient(-45deg,
+                    rgba(0, 0, 0, 0.1),
+                    rgba(0, 0, 0, 0.1) 4px,
+                    transparent 4px,
+                    transparent 8px);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = window.Recharts;
+
+        // --- Icons Helper ---
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const spanRef = React.useRef(null);
+            useEffect(() => {
+                if (spanRef.current) {
+                    spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className}" style="width: ${size}px; height: ${size}px;"></i>`;
+                    lucide.createIcons();
+                }
+            }, [name, size, className]);
+            return <span ref={spanRef} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></span>;
+        };
+
+        const DashboardConcept = () => {
+            const chartData = [
+                { name: '1', value: 1200 },
+                { name: '5', value: 1900 },
+                { name: '10', value: 1500 },
+                { name: '15', value: 2800 },
+                { name: '20', value: 2500 },
+                { name: '25', value: 3900 },
+                { name: '30', value: 4500 },
+            ];
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 flex items-center justify-center">
+                    <div className="w-full max-w-7xl">
+
+                        <div className="mb-8">
+                            <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Financial Overview</h1>
+                            <p className="text-gray-400">Dashboard UI Concept Prototype</p>
+                        </div>
+
+                        {/* Maquetación Principal */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+                            {/* Left Column (8 cols) - Widgets y Gráfico */}
+                            <div className="md:col-span-12 lg:col-span-8 flex flex-col gap-6">
+
+                                {/* Fila superior de la izquierda */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 h-48">
+
+                                    {/* Welcome Widget (Superior Izquierda) */}
+                                    <div className="rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between"
+                                        style={{ background: 'linear-gradient(135deg, #0055FF 0%, #003399 100%)' }}>
+                                        <div className="absolute top-4 right-4">
+                                            <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-md">
+                                                <Icon name="calendar" size={24} className="text-[#FF6B00]" />
+                                            </div>
+                                        </div>
+                                        <div className="mt-auto">
+                                            <h2 className="text-3xl font-bold text-white mb-1 tracking-tight">Hi Mike,</h2>
+                                            <p className="text-blue-100/80 text-sm font-medium">Welcome back to your dashboard!</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Target Progress (Centro Izquierda) */}
+                                    <div className="bg-card rounded-3xl p-6 border border-white/5 flex flex-col justify-center">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider">Target Progress</h3>
+                                            <Icon name="target" size={18} className="text-gray-500" />
+                                        </div>
+                                        <div className="text-4xl font-bold text-white mb-5 mt-2">78%</div>
+
+                                        <div className="h-4 w-full bg-[#2A2A2A] rounded-full overflow-hidden relative shadow-inner">
+                                            <div className="h-full w-[78%] bg-[#FF6B00] diagonal-stripes rounded-r-full relative flex items-center justify-end pr-1">
+                                                <div className="h-2 w-2 bg-white rounded-full shadow-[0_0_8px_#FF6B00]"></div>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-3 font-medium">You are 22% away from your monthly goal.</p>
+                                    </div>
+
+                                </div>
+
+                                {/* Main Sales Graph (Inferior Izquierda) */}
+                                <div className="bg-card rounded-3xl p-6 border border-white/5 flex-grow">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <div>
+                                            <h3 className="text-white font-bold text-lg">Revenue Stream</h3>
+                                            <p className="text-gray-500 text-xs mt-1 uppercase tracking-wider font-semibold">Current Month</p>
+                                        </div>
+                                        <button className="bg-[#2A2A2A] hover:bg-[#333] text-gray-300 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border border-white/5 flex items-center gap-2">
+                                            Export <Icon name="download" size={14} />
+                                        </button>
+                                    </div>
+                                    <div className="h-[280px] w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                                                <defs>
+                                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#FF6B00" stopOpacity={0.4} />
+                                                        <stop offset="95%" stopColor="#FF6B00" stopOpacity={0} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" vertical={false} />
+                                                <XAxis dataKey="name" stroke="#666" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 500 }} dy={10} />
+                                                <YAxis stroke="#666" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 500 }} tickFormatter={(value) => `$${value / 1000}k`} />
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#1A1A1A', border: '1px solid #333', borderRadius: '12px', color: '#fff', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}
+                                                    itemStyle={{ color: '#FF6B00', fontWeight: 'bold' }}
+                                                    cursor={{ stroke: '#333', strokeWidth: 2, strokeDasharray: '4 4' }}
+                                                />
+                                                <Area
+                                                    type="monotone"
+                                                    dataKey="value"
+                                                    stroke="#FF6B00"
+                                                    strokeWidth={4}
+                                                    fillOpacity={1}
+                                                    fill="url(#colorValue)"
+                                                    activeDot={{ r: 8, fill: '#FF6B00', stroke: '#1A1A1A', strokeWidth: 3, style: { filter: 'drop-shadow(0px 0px 8px rgba(255, 107, 0, 0.9))' } }}
+                                                />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* Center Right - Activity Column (2 cols) */}
+                            <div className="md:col-span-6 lg:col-span-2 flex flex-col gap-6">
+                                <div className="bg-card rounded-3xl p-6 border border-white/5 flex-1 flex flex-col justify-center relative overflow-hidden group">
+                                    <div className="absolute -right-6 -bottom-6 text-[#FF6B00]/5 group-hover:text-[#FF6B00]/10 transition-colors">
+                                        <Icon name="arrow-right-left" size={120} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <div className="bg-[#FF6B00]/10 p-3 rounded-2xl w-fit mb-6 border border-[#FF6B00]/20">
+                                            <Icon name="arrow-right-left" size={24} className="text-[#FF6B00]" />
+                                        </div>
+                                        <h3 className="text-gray-400 text-sm font-semibold mb-1 uppercase tracking-wider">Transfer</h3>
+                                        <div className="text-4xl font-bold text-[#FF6B00] tracking-tight">1,204</div>
+                                        <p className="text-xs text-gray-500 mt-2 font-medium">Monthly transactions</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-card rounded-3xl p-6 border border-white/5 flex-1 flex flex-col justify-center relative overflow-hidden group">
+                                    <div className="absolute -right-6 -bottom-6 text-[#FF6B00]/5 group-hover:text-[#FF6B00]/10 transition-colors">
+                                        <Icon name="shopping-bag" size={120} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <div className="bg-[#FF6B00]/10 p-3 rounded-2xl w-fit mb-6 border border-[#FF6B00]/20">
+                                            <Icon name="shopping-bag" size={24} className="text-[#FF6B00]" />
+                                        </div>
+                                        <h3 className="text-gray-400 text-sm font-semibold mb-1 uppercase tracking-wider">Purchase Orders</h3>
+                                        <div className="text-4xl font-bold text-[#FF6B00] tracking-tight">342</div>
+                                        <p className="text-xs text-gray-500 mt-2 font-medium">Pending approvals</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Far Right - Profit Blocks (2 cols) */}
+                            <div className="md:col-span-6 lg:col-span-2 flex flex-col gap-6">
+
+                                {/* Gross Profit (Naranja) */}
+                                <div className="rounded-3xl p-6 lg:p-8 flex-[3] flex flex-col shadow-[0_10px_30px_rgba(255,107,0,0.15)] relative overflow-hidden group"
+                                    style={{ background: '#FF6B00' }}>
+                                    {/* Patrón de fondo sutil */}
+                                    <div className="absolute inset-0 opacity-10 diagonal-stripes pointer-events-none"></div>
+
+                                    <div className="relative z-10">
+                                        <h3 className="text-[#331500] text-sm font-bold tracking-widest uppercase mb-1">Gross Profit</h3>
+                                        <p className="text-[#4D2000] text-xs font-bold uppercase tracking-wider">YTD 2026</p>
+                                    </div>
+
+                                    <div className="mt-auto relative z-10">
+                                        <div className="text-4xl lg:text-5xl font-black text-black tracking-tighter mb-4">$84.5k</div>
+
+                                        <div className="inline-flex items-center gap-1.5 bg-black/10 hover:bg-black/20 transition-colors px-3 py-1.5 rounded-xl cursor-pointer">
+                                            <div className="bg-black text-[#FF6B00] p-1 rounded-full">
+                                                <Icon name="trending-up" size={12} strokeWidth={4} />
+                                            </div>
+                                            <span className="text-black text-sm font-black tracking-wider">+12.4%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Net Profit (Azul) */}
+                                <div className="rounded-3xl p-6 flex-[2] flex flex-col justify-between shadow-[0_10px_30px_rgba(0,85,255,0.15)] relative overflow-hidden group"
+                                    style={{ background: '#0055FF' }}>
+                                    <div className="absolute -right-4 -bottom-4 text-white/5 group-hover:text-white/10 transition-colors transform -rotate-12">
+                                        <Icon name="pie-chart" size={100} />
+                                    </div>
+
+                                    <div className="flex justify-between items-start relative z-10 mb-4">
+                                        <h3 className="text-white text-sm font-bold tracking-widest uppercase">Net Profit</h3>
+                                        <div className="bg-white/10 p-1.5 rounded-lg">
+                                            <Icon name="pie-chart" size={16} className="text-white" />
+                                        </div>
+                                    </div>
+
+                                    <div className="relative z-10 mt-auto">
+                                        <div className="text-3xl lg:text-4xl font-black text-white tracking-tighter mb-1">$52.1k</div>
+                                        <p className="text-blue-200 text-xs font-medium tracking-wide">After deductions</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DashboardConcept />);
+    </script>
+</body>
+
+</html>

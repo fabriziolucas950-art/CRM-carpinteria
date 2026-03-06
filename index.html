@@ -35,28 +35,40 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
+            background-color: #0d0d0d;
             color: #f8fafc;
         }
 
+        .bg-card {
+            background-color: #1A1A1A;
+        }
+
+        .diagonal-stripes {
+            background-image: repeating-linear-gradient(-45deg,
+                    rgba(0, 0, 0, 0.1),
+                    rgba(0, 0, 0, 0.1) 4px,
+                    transparent 4px,
+                    transparent 8px);
+        }
+
         .glass {
-            background: rgba(30, 41, 59, 0.7);
+            background: #1A1A1A;
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .sidebar-item:hover {
-            background: rgba(59, 130, 246, 0.2);
-            border-left: 4px solid #3b82f6;
+            background: rgba(255, 107, 0, 0.1);
+            border-left: 4px solid #FF6B00;
         }
 
         .sidebar-item.active {
-            background: rgba(59, 130, 246, 0.3);
-            border-left: 4px solid #3b82f6;
+            background: rgba(255, 107, 0, 0.2);
+            border-left: 4px solid #FF6B00;
         }
 
         /* Custom scrollbar */
@@ -65,16 +77,16 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: #0f172a;
+            background: #0d0d0d;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #334155;
+            background: #2A2A2A;
             border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
+            background: #333333;
         }
     </style>
 </head>
@@ -84,6 +96,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
+        const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = window.Recharts || {};
 
         // --- Icons Helper ---
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -229,8 +242,80 @@
 
         const Dashboard = ({ tenantId, setTab }) => {
             const [isLoading, setIsLoading] = useState(true);
-            const [stats, setStats] = useState({ totalGastos: 0, totalClientes: 0 });
+            const [rawGastos, setRawGastos] = useState([]);
+            const [stats, setStats] = useState({
+                totalClientes: 0,
+                gastosCurrent: 0,
+                gastosPrev: 0,
+                ahorro: 0,
+                gastosRecientes: []
+            });
             const [alerts, setAlerts] = useState([]);
+            const [expenseFilter, setExpenseFilter] = useState('ALL'); // ALL, Personal, Insumos, Servicios
+
+            // Nuevos estados para Agenda
+            const [turnos, setTurnos] = useState([]);
+            const [selectedTurno, setSelectedTurno] = useState(null);
+
+            const handleDeleteTurno = async (id) => {
+                if (await window.confirmAsync('¿Seguro que deseas eliminar este turno?')) {
+                    try {
+                        const { error } = await window.supabaseClient.from('turnos').delete().eq('id', id);
+                        if (error) throw error;
+                        window.addToast('Turno eliminado correctamente.', 'success');
+                        setSelectedTurno(null);
+                        window.dispatchEvent(new CustomEvent('refresh-dashboard-turnos'));
+                    } catch (err) {
+                        window.addToast('Error al eliminar turno: ' + err.message, 'error');
+                    }
+                }
+            };
+
+            const handleEditTurno = (turno) => {
+                setSelectedTurno(null);
+                // El modal existe globalmente en index.html, lo abrimos pasando la info
+                window.dispatchEvent(new CustomEvent('open-edit-turno', { detail: turno }));
+            };
+            useEffect(() => {
+                if (!rawGastos.length) return;
+
+                const now = new Date();
+                const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+
+                // Filtrar por categoría (búsqueda parcial para ser flexibles)
+                const filteredGastos = expenseFilter === 'ALL'
+                    ? rawGastos
+                    : rawGastos.filter(g => g.categoria?.toLowerCase() === expenseFilter.toLowerCase() || g.concepto?.toLowerCase().includes(expenseFilter.toLowerCase()));
+
+                let sumCurrent = 0;
+                let sumPrev = 0;
+
+                filteredGastos.forEach(g => {
+                    const monto = Number(g.monto) || 0;
+                    if (g.fecha_gasto >= currentMonthStart) {
+                        sumCurrent += monto;
+                    } else if (g.fecha_gasto >= prevMonthStart && g.fecha_gasto < currentMonthStart) {
+                        sumPrev += monto;
+                    }
+                });
+
+                let calcAhorro = 0;
+                if (sumPrev > 0) {
+                    calcAhorro = ((sumPrev - sumCurrent) / sumPrev) * 100;
+                } else if (sumPrev === 0 && sumCurrent > 0) {
+                    calcAhorro = -100; // Incremento
+                }
+
+                setStats(prev => ({
+                    ...prev,
+                    gastosCurrent: sumCurrent,
+                    gastosPrev: sumPrev,
+                    ahorro: calcAhorro,
+                    gastosRecientes: filteredGastos.slice(0, 3)
+                }));
+
+            }, [rawGastos, expenseFilter]);
 
             useEffect(() => {
                 const loadGlobalStats = async () => {
@@ -239,31 +324,72 @@
                     try {
                         let newAlerts = [];
 
-                        // 1. Total Clientes & Alertas de Deudores
-                        const { data: clientesData, count: countClientes, error: errorClientes } = await window.supabaseClient
+                        // 1. Total Clientes
+                        const { data: clientesData, count: countClientes } = await window.supabaseClient
                             .from('clientes')
                             .select('id, name, budgets:presupuestos(total, paid, status)', { count: 'exact', head: false })
                             .eq('tenant_id', tenantId);
 
-                        // 2. Total Gastos Operativos
-                        const { data: gastosData, error: errorGastos } = await window.supabaseClient
+                        // 2. Gastos Operativos
+                        const { data: gastosData } = await window.supabaseClient
                             .from('costos_operativos')
-                            .select('monto')
-                            .eq('tenant_id', tenantId);
+                            .select('id, monto, concepto, categoria, fecha_gasto')
+                            .eq('tenant_id', tenantId)
+                            .order('fecha_gasto', { ascending: false });
 
-                        // 3. Proveedores & Alertas de Deudas
-                        const { data: proveedoresData, error: errorProveedores } = await window.supabaseClient
+                        // 3. Proveedores
+                        const { data: proveedoresData } = await window.supabaseClient
                             .from('proveedores')
                             .select('id, name, debts')
                             .eq('tenant_id', tenantId);
 
-                        if (errorClientes) console.error("Error clientes:", errorClientes);
-                        if (errorGastos) console.error("Error gastos:", errorGastos);
-                        if (errorProveedores) console.error("Error proveedores:", errorProveedores);
+                        // 4. Turnos de la semana
+                        const today = new Date();
+                        const dayOfWeek = today.getDay(); // 0 is Sun, 1 is Mon ... 6 is Sat
+                        // Ajustar para que Lunes sea el primer día de la semana a mostrar
+                        const diffToMonday = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                        const mondayDate = new Date(today.getFullYear(), today.getMonth(), diffToMonday);
 
-                        let sumGastos = 0;
+                        const formatYMD = (d) => {
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            return `${y}-${m}-${day}`;
+                        };
+                        const mondayStr = formatYMD(mondayDate);
+
+                        const saturdayDate = new Date(mondayDate);
+                        saturdayDate.setDate(mondayDate.getDate() + 5); // +5 llega hasta el sábado
+                        const saturdayStr = formatYMD(saturdayDate);
+
+                        console.log("Fetching Turnos entre:", mondayStr, "y", saturdayStr);
+
+                        const { data: turnosData, error: turnosErr } = await window.supabaseClient
+                            .from('turnos')
+                            .select('id, cliente_id, tipo_servicio, fecha, horario, estado') // Removed clientes(name) due to missing foreign key
+                            .eq('tenant_id', tenantId)
+                            .gte('fecha', mondayStr)
+                            .lte('fecha', saturdayStr);
+
+                        console.log("Turnos Data fetched:", turnosData, "Error:", turnosErr);
+
+                        if (turnosData && !turnosErr) {
+                            // Manual Join for client names
+                            const enriquecidos = turnosData.map(turno => {
+                                const matchedClient = clientesData?.find(c => c.id === turno.cliente_id);
+                                return {
+                                    ...turno,
+                                    clientes: matchedClient ? { name: matchedClient.name } : null
+                                };
+                            });
+                            setTurnos(enriquecidos);
+                        } else if (turnosErr) {
+                            console.error("Error validando la tabla turnos:", turnosErr);
+                            setTurnos([]);
+                        }
+
                         if (gastosData) {
-                            sumGastos = gastosData.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+                            setRawGastos(gastosData);
                         }
 
                         // Procesar Alertas = Clientes que deben
@@ -278,16 +404,20 @@
                                         }
                                     });
                                     if (owed > 0) {
+                                        // Bonus: Verificar si este cliente tiene un turno agendado esta semana para marcar alerta especial
+                                        const tieneTrunoPendiente = turnosData?.some(t => t.cliente_id === c.id && t.estado === 'pendiente');
+
                                         newAlerts.push({
                                             id: `client_${c.id}`,
                                             type: 'client',
-                                            title: `Cobro Pendiente: ${c.name}`,
+                                            title: tieneTrunoPendiente ? `ENTREGA PENDIENTE Y DEUDA: ${c.name}` : `Cobro Pendiente: ${c.name}`,
                                             amount: owed,
-                                            icon: 'alert-circle',
-                                            color: 'text-orange-400',
-                                            bg: 'bg-orange-500/20',
-                                            border: 'border-orange-500/50',
-                                            actionTab: 'clients'
+                                            icon: tieneTrunoPendiente ? 'calendar' : 'alert-circle',
+                                            color: tieneTrunoPendiente ? 'text-[#0055FF]' : 'text-orange-400',
+                                            bg: tieneTrunoPendiente ? 'bg-[#0055FF]/20' : 'bg-orange-500/20',
+                                            border: tieneTrunoPendiente ? 'border-[#0055FF]/50' : 'border-orange-500/50',
+                                            actionTab: 'clients',
+                                            peso: tieneTrunoPendiente ? 100 : 0 // Para ordenar arriba
                                         });
                                     }
                                 }
@@ -309,21 +439,27 @@
                                             color: 'text-red-400',
                                             bg: 'bg-red-500/20',
                                             border: 'border-red-500/50',
-                                            actionTab: 'suppliers'
+                                            actionTab: 'suppliers',
+                                            peso: 0
                                         });
                                     }
                                 }
                             });
                         }
 
-                        // Ordenar alertas por monto mayor a menor
-                        newAlerts.sort((a, b) => b.amount - a.amount);
-
-                        setStats({
-                            totalGastos: sumGastos,
-                            totalClientes: countClientes || 0
+                        // Limpiar duplicados accidentales antes de setear el state
+                        const uniqueAlertsMap = new Map();
+                        newAlerts.forEach(al => {
+                            if (!uniqueAlertsMap.has(al.id)) {
+                                uniqueAlertsMap.set(al.id, al);
+                            }
                         });
-                        setAlerts(newAlerts);
+                        const uniqueAlertsArray = Array.from(uniqueAlertsMap.values());
+                        uniqueAlertsArray.sort((a, b) => (b.amount + (b.peso || 0) * 1000) - (a.amount + (a.peso || 0) * 1000));
+
+                        setAlerts(uniqueAlertsArray);
+                        setStats(prev => ({ ...prev, totalClientes: countClientes || 0 }));
+
                     } catch (err) {
                         console.error("Error global stats:", err);
                     } finally {
@@ -332,122 +468,238 @@
                 };
 
                 loadGlobalStats();
+
+                // Escuchar actualización de turnos para repoblar la agenda interactiva
+                const handleRefresh = () => loadGlobalStats();
+                window.addEventListener('refresh-dashboard-turnos', handleRefresh);
+                return () => window.removeEventListener('refresh-dashboard-turnos', handleRefresh);
             }, [tenantId]);
 
+            const BUDGET_LIMIT = 1000000;
+            const overBudget = stats.gastosCurrent > (BUDGET_LIMIT * 0.8);
+
+            // Helpers y constantes para Agenda
+            const daysOfWeek = [
+                { key: '1', label: 'LUN' },
+                { key: '2', label: 'MAR' },
+                { key: '3', label: 'MIÉ' },
+                { key: '4', label: 'JUE' },
+                { key: '5', label: 'VIE' },
+                { key: '6', label: 'SÁB' },
+            ];
+
+            const getDayFromDateString = (dateString) => {
+                if (!dateString) return null;
+                // Parse date manual para evitar problemas de desfase horario por UTC
+                const [y, m, d] = dateString.split('-');
+                // Meses en JS Date van de 0 a 11
+                const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+                return date.getDay().toString();
+            };
+
+            const turnosByDay = { '1': [], '2': [], '3': [], '4': [], '5': [], '6': [] };
+            turnos.forEach(t => {
+                const day = getDayFromDateString(t.fecha);
+                if (turnosByDay[day]) {
+                    turnosByDay[day].push(t);
+                }
+            });
+
+            const currentDayNumber = new Date().getDay().toString();
+
             return (
-                <div className="p-4 md:p-8 pb-20">
+                <div className="p-4 md:p-8 pb-20 mt-4 animate-in fade-in duration-500">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                         <div>
-                            <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Resumen Principal</h2>
-                            <p className="text-slate-400 text-sm mt-1">Vista general del estado de tu negocio.</p>
+                            <h2 className="text-2xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#0055FF] to-blue-400 uppercase tracking-tight">Panel de Control</h2>
+                            <p className="text-slate-400 text-sm mt-1 uppercase font-semibold tracking-widest">Resumen General y Agenda</p>
                         </div>
                     </div>
 
                     {isLoading ? (
                         <div className="flex justify-center items-center py-20">
-                            <span className="animate-spin border-4 border-slate-700 border-t-blue-500 rounded-full w-12 h-12"></span>
+                            <span className="animate-spin border-4 border-[#1A1A1A] border-t-[#0055FF] rounded-full w-12 h-12"></span>
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-
-                                {/* KPI: Gastos Totales */}
-                                <div className="glass p-6 rounded-2xl relative overflow-hidden group">
-                                    <div className="absolute -right-6 -top-6 text-red-500/10 group-hover:text-red-500/20 transition-colors">
-                                        <Icon name="trending-down" size={120} />
-                                    </div>
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="p-3 bg-red-500/20 text-red-400 rounded-xl">
-                                                <Icon name="receipt" size={24} />
-                                            </div>
-                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Gastos Operativos (Histórico)</h3>
+                            {/* TOP ROW: Agenda y Quick Actions */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+                                {/* AGENDA SEMANAL */}
+                                <div className="lg:col-span-8 bg-[#0055FF] rounded-[20px] p-6 lg:p-8 shadow-[0_10px_40px_rgba(0,85,255,0.2)] relative overflow-hidden border border-blue-400/20"
+                                    style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
+                                        <h3 className="text-white text-lg font-black tracking-widest uppercase flex items-center gap-2">
+                                            <Icon name="calendar" size={24} className="text-blue-200" />
+                                            Agenda Semanal
+                                        </h3>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[#0055FF] text-xs font-black tracking-widest uppercase py-1.5 px-3 bg-white rounded-full shadow-lg">En curso</span>
+                                            <button onClick={() => window.dispatchEvent(new CustomEvent('open-new-turno-manual'))} className="bg-black hover:bg-gray-900 border border-blue-400/50 text-white rounded-xl py-1.5 px-3 flex items-center gap-1 transition-all text-xs font-bold uppercase tracking-widest shadow-lg shadow-black/20">
+                                                <Icon name="plus" size={14} className="text-[#0055FF]" /> Turno
+                                            </button>
                                         </div>
-                                        <p className="text-4xl font-black text-slate-100 flex items-baseline gap-1">
-                                            <span className="text-xl text-red-400">$</span>
-                                            {stats.totalGastos.toLocaleString()}
-                                        </p>
-                                        <button onClick={() => setTab('costs')} className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1">Ver detalles <Icon name="arrow-right" size={14} /></button>
                                     </div>
-                                </div>
 
-                                {/* KPI: Clientes Activos */}
-                                <div className="glass p-6 rounded-2xl relative overflow-hidden group">
-                                    <div className="absolute -right-6 -top-6 text-blue-500/10 group-hover:text-blue-500/20 transition-colors">
-                                        <Icon name="users" size={120} />
-                                    </div>
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl">
-                                                <Icon name="user-check" size={24} />
-                                            </div>
-                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Clientes Registrados</h3>
-                                        </div>
-                                        <p className="text-4xl font-black text-slate-100">
-                                            {stats.totalClientes}
-                                        </p>
-                                        <button onClick={() => { setTab('clients'); setTimeout(() => window.dispatchEvent(new CustomEvent('focus-new-client')), 100); }} className="mt-6 text-sm bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors">
-                                            <Icon name="user-plus" size={14} /> Nuevo Cliente
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Acciones Rápidas */}
-                                <div className="glass p-6 rounded-2xl flex flex-col justify-center">
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Acciones Rápidas</h3>
-                                    <div className="space-y-3">
-                                        <button onClick={() => setTab('quoter')} className="w-full bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/50 text-blue-400 p-3 rounded-xl flex justify-between items-center transition-colors font-bold">
-                                            <span>Generar Presupuesto</span>
-                                            <Icon name="plus-circle" size={18} />
-                                        </button>
-                                        <button onClick={() => setTab('costs')} className="w-full bg-orange-600/30 hover:bg-orange-600/50 border border-orange-500/50 text-orange-400 p-3 rounded-xl flex justify-between items-center transition-colors font-bold">
-                                            <span>Cargar Gasto Operativo</span>
-                                            <Icon name="dollar-sign" size={18} />
-                                        </button>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            {/* Alertas */}
-                            <div className="glass p-6 rounded-2xl">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Icon name="bell" className="text-yellow-400" />
-                                    <h3 className="text-lg font-bold text-slate-100 uppercase tracking-wider">Centro de Alertas ({alerts.length})</h3>
-                                </div>
-
-                                {alerts.length === 0 ? (
-                                    <div className="text-center py-10 bg-slate-800/30 rounded-xl border border-dashed border-slate-700">
-                                        <div className="text-slate-500 mb-2 flex justify-center"><Icon name="check-circle" size={32} /></div>
-                                        <p className="text-slate-400 font-medium">Todo al día. No hay alertas pendientes por resolver.</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {alerts.map(alert => (
-                                            <div key={alert.id} className={`p-4 rounded-xl border ${alert.bg} ${alert.border} backdrop-blur-sm flex justify-between items-center group`}>
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`p-2 rounded-lg bg-slate-900/50 ${alert.color}`}>
-                                                        <Icon name={alert.icon} size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <span className={`block text-xs font-bold uppercase tracking-wider ${alert.color} mb-1`}>{alert.title}</span>
-                                                        <span className="block text-xl font-black text-slate-200">${alert.amount.toLocaleString()}</span>
-                                                    </div>
+                                    <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3 relative z-10 min-h-[16rem]">
+                                        {daysOfWeek.map(day => (
+                                            <div key={day.key} className={`flex flex-col rounded-xl overflow-hidden border ${currentDayNumber === day.key ? 'bg-white/10 border-white/30' : 'bg-black/20 border-white/5'}`}>
+                                                <div className={`p-2 text-center text-[10px] md:text-xs font-bold ${currentDayNumber === day.key ? 'bg-white text-[#0055FF]' : 'bg-black/40 text-blue-200'} uppercase tracking-widest`}>
+                                                    {day.label}
                                                 </div>
-                                                <button onClick={() => setTab(alert.actionTab)} className={`opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg bg-slate-900/80 ${alert.color} hover:text-white`} title="Resolver">
-                                                    <Icon name="arrow-right" size={18} />
-                                                </button>
+                                                <div className="p-2 flex-1 flex flex-col gap-2 overflow-y-auto hide-scrollbar min-h-[100px]">
+                                                    {turnosByDay[day.key]?.map(turno => (
+                                                        <div key={turno.id} onClick={() => setSelectedTurno(turno)} className="bg-white hover:bg-gray-100 text-[#0055FF] p-2 rounded-lg cursor-pointer transition-transform hover:scale-105 shadow-sm border border-blue-100">
+                                                            <div className="flex justify-between items-center mb-0.5">
+                                                                <div className="text-[9px] md:text-[10px] font-black uppercase text-[#0055FF]/70 truncate">{turno.horario || 'S/H'}</div>
+                                                                {turno.estado === 'completado' && <Icon name="check-circle" size={12} className="text-green-500" />}
+                                                            </div>
+                                                            <div className="text-xs font-bold leading-tight break-words text-[#1A1A1A] line-clamp-2">
+                                                                {turno.clientes?.name || (turno.tipo_servicio && turno.tipo_servicio.startsWith('(Manual)') ? turno.tipo_servicio.split(' - ')[0].replace('(Manual) ', '') : 'Cliente Especial')}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {(!turnosByDay[day.key] || turnosByDay[day.key].length === 0) && (
+                                                        <div className="h-full flex items-center justify-center">
+                                                            <span className="text-white/20 text-[10px] uppercase font-bold tracking-widest">-</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
-                                )}
+                                </div>
+
+                                {/* QUICK ACTIONS */}
+                                <div className="lg:col-span-4 flex flex-col gap-4">
+                                    <div className="flex-1 bg-[#1A1A1A] rounded-[20px] p-6 border border-[#0055FF]/30 shadow-[0_0_30px_rgba(0,85,255,0.1)] flex flex-col justify-center">
+                                        <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-5 flex items-center justify-between">
+                                            Acciones Rápidas
+                                            <Icon name="zap" size={16} className="text-[#0055FF]" />
+                                        </h3>
+                                        <div className="flex flex-col gap-3">
+                                            {[
+                                                { label: 'CLIENTE NUEVO (+)', icon: 'user-plus', action: () => { setTab('clients'); setTimeout(() => window.dispatchEvent(new CustomEvent('focus-new-client')), 100); } },
+                                                { label: 'GASTO OPERATIVO (+)', icon: 'dollar-sign', action: () => setTab('costs') },
+                                                { label: 'NUEVO PRESU (+)', icon: 'file-text', action: () => setTab('clients') },
+                                                { label: 'AGG PRODUCTO (+)', icon: 'package', action: () => setTab('settings') /* Assuming catalog/settings */ }
+                                            ].map(btn => (
+                                                <button key={btn.label} onClick={btn.action} className="w-full flex items-center justify-between p-4 rounded-full bg-[#0d0d0d] hover:bg-black border border-[#0055FF]/40 hover:border-[#0055FF] hover:shadow-[0_0_15px_rgba(0,85,255,0.4)] transition-all group overflow-hidden relative">
+                                                    <div className="absolute inset-0 bg-[#0055FF]/5 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                                                    <span className="text-[#3388FF] text-xs font-black tracking-widest uppercase relative z-10">{btn.label}</span>
+                                                    <Icon name={btn.icon} size={16} className="text-[#0055FF] group-hover:scale-110 transition-transform relative z-10" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* BOTTOM ROW: Gastos + Alertas */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+
+                                {/* HERO WIDGET: Alertas Activas (Full Width / Naranja) */}
+                                <div className={`lg:col-span-12 flex flex-col rounded-[20px] p-6 lg:p-10 shadow-[0_10px_40px_rgba(255,107,0,0.15)] relative overflow-hidden transition-all duration-500 border border-[#FF6B00] cursor-pointer`}
+                                    style={{ background: '#FF6B00' }}
+                                    onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}>
+
+                                    <div className="absolute inset-0 opacity-10 diagonal-stripes pointer-events-none"></div>
+
+                                    <div className="relative z-10 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-8">
+                                        <div>
+                                            <h3 className="text-[#331500] text-sm md:text-base font-bold tracking-widest uppercase mb-1 flex items-center gap-2">
+                                                Alertas Activas
+                                                {alerts.length > 0 && <Icon name="bell" size={18} className="text-red-900 animate-pulse" />}
+                                            </h3>
+                                            <p className="text-[#4D2000] text-xs font-bold uppercase tracking-wider">Atención Requerida</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 mt-auto flex-1">
+                                        <div className="flex flex-col justify-center">
+                                            <div className="text-5xl md:text-8xl font-black text-black tracking-tighter mb-4 transition-all" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                                {alerts.length}
+                                            </div>
+                                            <div className="flex items-center gap-4 flex-wrap">
+                                                <div className="inline-flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-xl text-black font-bold border bg-black/10 border-black/5 shadow-sm">
+                                                    <Icon name="alert-circle" size={14} className="text-red-800" />
+                                                    <span className="text-xs tracking-wider uppercase">Casos Críticos</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Detalle Rápido de Alertas */}
+                                        <div className="flex flex-col justify-end">
+                                            <div className="bg-black/10 rounded-xl p-4 md:p-5 border border-black/5">
+                                                <h4 className="text-[#331500] text-xs font-bold uppercase tracking-wider mb-3">Últimas Alertas</h4>
+                                                {alerts.length > 0 ? (
+                                                    <div className="space-y-3">
+                                                        {alerts.map((al, idx) => (
+                                                            <div key={`${al.id}-${idx}`} onClick={(e) => { e.stopPropagation(); setTab(al.actionTab); }} className="flex justify-between items-center text-sm font-semibold border-b border-black/10 pb-2 last:border-0 last:pb-0 hover:bg-black/5 p-2 rounded-lg cursor-pointer transition-colors group">
+                                                                <span className="text-black truncate pr-4 group-hover:underline">{al.title}</span>
+                                                                {al.amount > 0 && <span className="text-[#331500] whitespace-nowrap">${Number(al.amount).toLocaleString()}</span>}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-[#4D2000] text-sm font-medium leading-relaxed">No hay alertas. Todo se encuentra al día.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Button */}
+                                    <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 bg-black hover:bg-[#1a1a1a] hover:scale-105 active:scale-95 transition-all w-11 h-11 rounded-full flex items-center justify-center shadow-xl border border-white/5 group z-20">
+                                        <Icon name="arrow-down" size={20} className="text-[#FF6B00] group-hover:translate-y-1 transition-transform" />
+                                    </div>
+                                </div>
+
+                                {/* Columna eliminada (Alertas y Clientes) */}
+
+                            </div>
+
+                            {/* Sección inferior de 'Cobros y Avisos' ha sido movida al Widget Superior y eliminada de aquí */}
+
+                            {/* Modal Vista Rápida Turno */}
+                            {selectedTurno && (
+                                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setSelectedTurno(null)}>
+                                    <div className="bg-[#1A1A1A] rounded-3xl p-8 max-w-sm w-full border border-white/10 shadow-2xl relative animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+                                        <button onClick={() => setSelectedTurno(null)} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+                                            <Icon name="x" size={24} />
+                                        </button>
+                                        <div className="w-14 h-14 rounded-2xl bg-[#0055FF] flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
+                                            <Icon name="calendar" size={28} className="text-white" />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-white mb-1 leading-tight">{selectedTurno.clientes?.name || 'Cliente sin nombre'}</h3>
+                                        <p className="text-[#0055FF] font-bold text-sm tracking-wide uppercase mb-6 flex items-center gap-2">
+                                            <Icon name="clock" size={14} /> {selectedTurno.fecha} • {selectedTurno.horario || 'Sin horario'}
+                                        </p>
+
+                                        <div className="bg-black/50 rounded-xl p-4 mb-6 border border-white/5">
+                                            <p className="text-[10px] uppercase text-gray-500 font-bold tracking-widest mb-2">Detalle del Servicio</p>
+                                            <p className="text-white text-sm font-medium leading-relaxed">{selectedTurno.tipo_servicio || 'Especificar servicio a realizar... (Sin detalle)'}</p>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3">
+                                            <button onClick={() => { setSelectedTurno(null); setTab('clients'); }} className="w-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 text-sm transition-colors border border-white/10">
+                                                <Icon name="user" size={16} /> Ver Perfil del Cliente
+                                            </button>
+                                            <div className="grid grid-cols-2 gap-3 mt-1">
+                                                <button onClick={() => handleEditTurno(selectedTurno)} className="w-full bg-[#0055FF] hover:bg-blue-600 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 text-sm transition-colors shadow-lg shadow-blue-500/20">
+                                                    <Icon name="edit-2" size={16} /> Editar
+                                                </button>
+                                                <button onClick={() => handleDeleteTurno(selectedTurno.id)} className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 border border-red-500/20 py-3 rounded-xl font-bold flex justify-center items-center gap-2 text-sm transition-colors duration-200">
+                                                    <Icon name="trash-2" size={16} /> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
             )
         };
-
 
         const ClientManager = ({ clients, setClients, tenantId }) => {
             const [newClient, setNewClient] = useState({ name: '', phone: '', address: '', city: '' });
@@ -518,8 +770,16 @@
                     if (error) throw error;
 
                     if (data && data.length > 0) {
-                        setClients([...clients, data[0]]);
+                        const addedClient = data[0];
+                        setClients([...clients, addedClient]);
                         setNewClient({ name: '', phone: '', address: '', city: '' });
+
+                        // Nuevo flujo: Sugerir turno
+                        setTimeout(() => {
+                            if (window.confirm(`Cliente "${addedClient.name}" guardado exitosamente.\n\n¿Deseas programar un turno en la agenda para este cliente ahora mismo?`)) {
+                                window.dispatchEvent(new CustomEvent('open-new-turno', { detail: { client: addedClient } }));
+                            }
+                        }, 300);
                     }
                 } catch (error) {
                     console.error('Error al agregar cliente:', error);
@@ -3124,8 +3384,8 @@
                             if (masterMatch && masterMatch.unidad_predeterminada && !newItem.unidad_compra) {
                                 newUnit = masterMatch.unidad_predeterminada;
                             } else if (!newItem.unidad_compra) {
-                                if (upperValue.includes('PLACA')) newUnit = '$M^2$';
-                                else if (upperValue.includes('CANTO')) newUnit = '$ML$';
+                                if (upperValue.includes('PLACA')) newUnit = 'm2';
+                                else if (upperValue.includes('CANTO')) newUnit = 'ml';
                             }
                             newItem.unidad_compra = newUnit;
                             if (!newItem.unidad_destino) newItem.unidad_destino = newUnit; // Sync destination unit initially
@@ -3316,11 +3576,11 @@
                                             <td colSpan="8" className="p-6 text-center text-slate-500 italic">No hay productos en la lista.</td>
                                         </tr>
                                     ) : filteredItems.map((item, idx) => {
-                                        const isPlaca = item.unidad_compra === '$M^2$' || item.unidad_compra?.toLowerCase() === 'm2';
-                                        const isCanto = item.unidad_compra === '$ML$' || item.unidad_compra?.toLowerCase() === 'ml';
+                                        const isPlaca = item.unidad_compra === 'm2' || item.unidad_compra?.toLowerCase() === 'm2';
+                                        const isCanto = item.unidad_compra === 'ml' || item.unidad_compra?.toLowerCase() === 'ml';
 
                                         // Generar lista única de unidades usadas
-                                        const defaultUnits = ['$M^2$', '$ML$', '$KG$', '$U$', 'bolsa', 'par'];
+                                        const defaultUnits = ['m2', 'ml', 'kg', 'u.', 'bolsa', 'par'];
                                         const recordedUnits = new Set(defaultUnits);
                                         items.forEach(i => {
                                             if (i.unidad_compra) recordedUnits.add(i.unidad_compra);
@@ -3844,6 +4104,152 @@
             );
         };
 
+        // --- Global Turno Modal ---
+        const GlobalTurnoModal = ({ tenantId }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [clientData, setClientData] = useState(null);
+            const [editingTurnoId, setEditingTurnoId] = useState(null);
+            const [formData, setFormData] = useState({ fecha: '', horario: '', tipo_servicio: '', manualClientName: '' });
+            const [isSaving, setIsSaving] = useState(false);
+
+            useEffect(() => {
+                const handleOpen = (e) => {
+                    setEditingTurnoId(null);
+                    if (e.detail && e.detail.client) {
+                        setClientData(e.detail.client);
+                    } else {
+                        setClientData(null); // Indicates manual entry without auto-selected client
+                    }
+                    const today = new Date().toISOString().split('T')[0];
+                    setFormData({ fecha: today, horario: '10:00', tipo_servicio: '', manualClientName: '' });
+                    setIsOpen(true);
+                };
+
+                const handleEdit = (e) => {
+                    const turno = e.detail;
+                    setEditingTurnoId(turno.id);
+                    // Determinar si es un turno manual o atado a cliente
+                    if (turno.cliente_id && turno.clientes) {
+                        setClientData({ id: turno.cliente_id, name: turno.clientes.name });
+                        setFormData({
+                            fecha: turno.fecha,
+                            horario: turno.horario || '',
+                            tipo_servicio: turno.tipo_servicio || '',
+                            manualClientName: ''
+                        });
+                    } else {
+                        setClientData(null);
+                        // Extraer el nombre manual que está embebido en "(Manual) Juan Perez - ..."
+                        let manualName = '';
+                        let cleanService = turno.tipo_servicio || '';
+                        if (cleanService.startsWith('(Manual)')) {
+                            const splitParts = cleanService.replace('(Manual) ', '').split(' - ');
+                            manualName = splitParts[0] || '';
+                            cleanService = splitParts.length > 1 ? splitParts.slice(1).join(' - ') : '';
+                        }
+                        setFormData({
+                            fecha: turno.fecha,
+                            horario: turno.horario || '',
+                            tipo_servicio: cleanService,
+                            manualClientName: manualName
+                        });
+                    }
+                    setIsOpen(true);
+                };
+
+                window.addEventListener('open-new-turno', handleOpen);
+                window.addEventListener('open-new-turno-manual', handleOpen);
+                window.addEventListener('open-edit-turno', handleEdit);
+                return () => {
+                    window.removeEventListener('open-new-turno', handleOpen);
+                    window.removeEventListener('open-new-turno-manual', handleOpen);
+                    window.removeEventListener('open-edit-turno', handleEdit);
+                };
+            }, []);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setIsSaving(true);
+                try {
+                    // Si es un turno manual sin cliente elegido, creamos un registro temporal o pedimos que lo guarde como detalle.
+                    // Para simplificar, si no hay clientData.id (es nulo), usamos el nombre manual en el campo "tipo_servicio".
+                    const payload = {
+                        tenant_id: tenantId,
+                        cliente_id: clientData ? clientData.id : null,
+                        fecha: formData.fecha,
+                        horario: formData.horario,
+                        tipo_servicio: clientData ? formData.tipo_servicio : `(Manual) ${formData.manualClientName} - ${formData.tipo_servicio}`
+                    };
+
+                    let error;
+                    if (editingTurnoId) {
+                        const { error: updateError } = await window.supabaseClient.from('turnos').update(payload).eq('id', editingTurnoId);
+                        error = updateError;
+                    } else {
+                        // Es un create
+                        payload.estado = 'pendiente';
+                        const { error: insertError } = await window.supabaseClient.from('turnos').insert([payload]);
+                        error = insertError;
+                    }
+
+                    if (error) throw error;
+                    window.addToast(editingTurnoId ? 'Turno actualizado correctamente.' : 'Turno programado correctamente.', 'success');
+                    setIsOpen(false);
+                    // Emit event to refresh dashboard if open
+                    window.dispatchEvent(new CustomEvent('refresh-dashboard-turnos'));
+                } catch (err) {
+                    window.addToast('Error al programar turno: ' + err.message, 'error');
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 z-[9900] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-[#1A1A1A] rounded-3xl p-6 md:p-8 max-w-md w-full border border-blue-500/20 shadow-[0_0_50px_rgba(0,85,255,0.15)] relative">
+                        <button onClick={() => setIsOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+                            <Icon name="x" size={24} />
+                        </button>
+                        <h3 className="text-2xl font-black text-white mb-2 flex items-center gap-2">
+                            <Icon name={editingTurnoId ? "edit" : "calendar-plus"} className="text-[#0055FF]" /> {editingTurnoId ? 'Editar Turno' : 'Nuevo Turno'}
+                        </h3>
+                        {clientData ? (
+                            <p className="text-[#0055FF] font-bold text-sm tracking-wide mb-6">Para: {clientData.name}</p>
+                        ) : (
+                            <p className="text-gray-400 font-bold text-sm tracking-wide mb-6 text-balance">{editingTurnoId ? 'Editando turno manual independiente' : 'Agendando turno manual independiente'}</p>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {!clientData && (
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Nombre del Cliente / Referencia</label>
+                                    <input type="text" required placeholder="Juan Pérez..." value={formData.manualClientName} onChange={e => setFormData({ ...formData, manualClientName: e.target.value })} className="w-full bg-[#0d0d0d] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#0055FF] transition-all" />
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Fecha asignada</label>
+                                <input type="date" required value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} className="w-full bg-[#0d0d0d] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#0055FF] transition-all" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Horario (Aprox)</label>
+                                <input type="time" required value={formData.horario} onChange={e => setFormData({ ...formData, horario: e.target.value })} className="w-full bg-[#0d0d0d] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#0055FF] transition-all" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Servicio / Detalle</label>
+                                <input type="text" required placeholder="Ej: Medición de amoblamiento" value={formData.tipo_servicio} onChange={e => setFormData({ ...formData, tipo_servicio: e.target.value })} className="w-full bg-[#0d0d0d] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#0055FF] transition-all" />
+                            </div>
+                            <button type="submit" disabled={isSaving} className="w-full mt-4 bg-[#0055FF] hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2">
+                                {isSaving ? <div className="animate-spin h-5 w-5 border-2 border-white/30 border-t-white rounded-full"></div> : <Icon name={editingTurnoId ? "save" : "check"} />}
+                                {editingTurnoId ? 'Guardar Cambios' : 'Confirmar Turno'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
         // --- Main App ---
         const App = () => {
             const [session, setSession] = useState(null);
@@ -4006,6 +4412,7 @@
                     </main>
                     <ToastContainer />
                     <ConfirmDialog />
+                    <GlobalTurnoModal tenantId={tenantId} />
                 </div>
             );
         };
