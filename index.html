@@ -88,6 +88,145 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #333333;
         }
+
+        /* Light Theme Overrides */
+        body.light-theme {
+            background-color: #f1f5f9;
+            /* slate-100 */
+            color: #0f172a;
+            /* slate-900 */
+        }
+
+        body.light-theme .bg-card,
+        body.light-theme .glass {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #1e293b;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        body.light-theme .text-slate-400,
+        body.light-theme .text-slate-500 {
+            color: #475569 !important;
+            /* slate-600 */
+        }
+
+        body.light-theme .text-slate-300,
+        body.light-theme .text-slate-200 {
+            color: #1e293b !important;
+            /* slate-800 */
+        }
+
+        body.light-theme .text-white {
+            color: #020617 !important;
+            /* slate-950 */
+        }
+
+        body.light-theme .bg-slate-900,
+        body.light-theme .bg-slate-900\/50,
+        body.light-theme .bg-slate-900\/40 {
+            background-color: #f1f5f9 !important;
+            /* slate-100 */
+            border-color: #e2e8f0 !important;
+        }
+
+        body.light-theme .bg-slate-800,
+        body.light-theme .bg-slate-800\/50,
+        body.light-theme .bg-slate-800\/80,
+        body.light-theme .bg-slate-800\/30 {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        body.light-theme .hover\:bg-slate-800:hover,
+        body.light-theme .hover\:bg-slate-800\/50:hover,
+        body.light-theme .hover\:bg-slate-800\/30:hover {
+            background-color: #f1f5f9 !important;
+        }
+
+        body.light-theme .border-slate-700,
+        body.light-theme .border-slate-800,
+        body.light-theme .border-white\/10,
+        body.light-theme .border-white\/20,
+        body.light-theme .border-slate-700\/50 {
+            border-color: #cbd5e1 !important;
+        }
+
+        body.light-theme input,
+        body.light-theme select {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        body.light-theme input:focus,
+        body.light-theme select:focus {
+            background-color: #ffffff !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+        }
+
+        /* Adjust specific background tables/cells for light mode */
+        body.light-theme .bg-blue-900\/10,
+        body.light-theme .bg-blue-500\/10 {
+            background-color: #eff6ff !important;
+            border-color: #bfdbfe !important;
+            color: #1d4ed8 !important;
+            /* blue-700 */
+        }
+
+        body.light-theme .bg-yellow-900\/10,
+        body.light-theme .bg-yellow-500\/10 {
+            background-color: #fefce8 !important;
+            border-color: #fef08a !important;
+            color: #a16207 !important;
+            /* yellow-700 */
+        }
+
+        body.light-theme .bg-orange-900\/10,
+        body.light-theme .bg-orange-500\/10 {
+            background-color: #fff7ed !important;
+            border-color: #fed7aa !important;
+            color: #c2410c !important;
+            /* orange-700 */
+        }
+
+        body.light-theme .bg-red-900\/10,
+        body.light-theme .bg-red-500\/10 {
+            background-color: #fef2f2 !important;
+            border-color: #fecaca !important;
+            color: #b91c1c !important;
+            /* red-700 */
+        }
+
+        body.light-theme .bg-emerald-900\/10,
+        body.light-theme .bg-emerald-500\/10 {
+            background-color: #ecfdf5 !important;
+            border-color: #a7f3d0 !important;
+            color: #047857 !important;
+            /* emerald-700 */
+        }
+
+        body.light-theme .text-emerald-400 {
+            color: #059669 !important;
+        }
+
+        body.light-theme .text-blue-400 {
+            color: #2563eb !important;
+        }
+
+        body.light-theme .text-yellow-400 {
+            color: #ca8a04 !important;
+        }
+
+        body.light-theme .text-orange-400 {
+            color: #ea580c !important;
+        }
+
+        body.light-theme .text-red-400,
+        body.light-theme .text-red-500 {
+            color: #dc2626 !important;
+        }
     </style>
 </head>
 
@@ -116,7 +255,7 @@
         };
 
         // --- Layout Components ---
-        const Sidebar = ({ currentTab, setTab, isOpen, setIsOpen, onLogout, userRole = 'viewer' }) => {
+        const Sidebar = ({ currentTab, setTab, isOpen, setIsOpen, onLogout, userRole = 'viewer', theme = 'dark' }) => {
             const [adminOpen, setAdminOpen] = useState(true);
 
             const menuItems = [
@@ -147,7 +286,7 @@
                     )}
 
                     <div className={`w-64 h-screen fixed left-0 top-0 flex flex-col p-4 z-[90] transition-all duration-300 transform 
-                        ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} style={{ background: 'rgba(30, 41, 59, 0.6)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                        ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} style={{ background: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(30, 41, 59, 0.6)', backdropFilter: 'blur(20px)', borderRight: theme === 'light' ? '1px solid rgba(0, 0, 0, 0.05)' : '1px solid rgba(255, 255, 255, 0.05)' }}>
 
                         <div className="flex justify-between items-center mb-8 px-2 mt-2">
                             <div className="flex items-center gap-3">
@@ -701,6 +840,173 @@
             )
         };
 
+        const CutlistCalculatorModal = ({ budget, onClose }) => {
+            const [materials, setMaterials] = useState([
+                { id: 1, type: 'Placa', name: '', qty: 1, notes: '' }
+            ]);
+
+            const addMaterial = () => setMaterials([...materials, { id: Date.now(), type: 'Placa', name: '', qty: 1, notes: '' }]);
+            const removeMaterial = (id) => setMaterials(materials.filter(m => m.id !== id));
+            const updateMaterial = (id, field, value) => setMaterials(materials.map(m => m.id === id ? { ...m, [field]: value } : m));
+
+            const generatePDF = () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFillColor(30, 64, 175);
+                doc.rect(0, 0, 210, 15, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "bold");
+                doc.text("ORDEN DE CORTE Y DESPIECE", 105, 10, { align: "center" });
+
+                doc.setTextColor(40);
+                doc.setFontSize(14);
+                doc.text("Referencia / Proyecto:", 14, 30);
+                doc.setFont("helvetica", "normal");
+                doc.text(budget?.summary || "Sin referencia", 14, 38);
+
+                doc.setFontSize(10);
+                doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-AR')}`, 14, 46);
+
+                doc.setFont("helvetica", "bold");
+                doc.text("Items del Presupuesto Original:", 14, 60);
+                doc.setFont("helvetica", "normal");
+                let y = 66;
+                (budget?.items || []).forEach(item => {
+                    doc.text(`- ${item.qty}x ${item.desc}`, 14, y);
+                    y += 6;
+                });
+
+                y += 10;
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(14);
+                doc.text("MATERIALES REQUERIDOS", 14, y);
+                y += 6;
+
+                const tableData = materials.map(m => [
+                    m.type,
+                    m.qty.toString(),
+                    m.name,
+                    m.notes
+                ]);
+
+                doc.autoTable({
+                    startY: y,
+                    head: [['TIPO', 'CANT', 'MATERIAL', 'NOTAS / MEDIDAS']],
+                    theme: 'grid',
+                    headStyles: { fillColor: [30, 64, 175], textColor: 255, fontSize: 10 },
+                    styles: { fontSize: 9, cellPadding: 3 },
+                    columnStyles: {
+                        0: { cellWidth: 30 },
+                        1: { cellWidth: 20, halign: 'center' },
+                        2: { cellWidth: 70 },
+                        3: { cellWidth: 'auto' }
+                    }
+                });
+
+                doc.save(`Despiece_${budget?.id || 'doc'}.pdf`);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9900] overflow-y-auto w-full custom-scrollbar">
+                    <div className="bg-[#1A1A1A] rounded-3xl p-6 md:p-8 max-w-4xl w-full border border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.15)] relative my-8 flex flex-col max-h-[90vh]">
+                        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors z-10 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">
+                            <Icon name="x" size={24} />
+                        </button>
+
+                        <div className="shrink-0 mb-6 border-b border-slate-800 pb-4">
+                            <h3 className="text-2xl font-black text-white mb-2 flex items-center gap-3 text-emerald-400">
+                                <Icon name="scissors" className="text-emerald-400" size={28} /> Calculadora de Despiece
+                            </h3>
+                            <p className="text-slate-400 text-sm opacity-80">Prepará la orden de materiales para el taller o maderera del presupuesto: <span className="text-white font-semibold block mt-1">{budget?.summary}</span></p>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
+                            {/* Budget items reference */}
+                            <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+                                <h4 className="text-[10px] uppercase font-bold text-slate-500 mb-2 tracking-widest flex items-center gap-2">
+                                    <Icon name="list" size={14} /> Items a fabricar
+                                </h4>
+                                <ul className="space-y-1 text-sm text-slate-300">
+                                    {(budget?.items || []).map((bItem, idx) => (
+                                        <li key={idx} className="flex gap-2">
+                                            <span className="font-mono text-emerald-500">{bItem.qty}x</span> {bItem.desc}
+                                        </li>
+                                    ))}
+                                    {(!budget?.items || budget.items.length === 0) && <li className="text-slate-500 italic">No hay items detallados en este presupuesto.</li>}
+                                </ul>
+                            </div>
+
+                            {/* Materials Grid */}
+                            <div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                                        <Icon name="package" size={16} className="text-emerald-400" /> Detalle de Materiales
+                                    </h4>
+                                    <button onClick={addMaterial} className="text-xs font-bold bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-emerald-500/30">
+                                        <Icon name="plus" size={14} /> Agregar Fila
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="hidden md:grid grid-cols-12 gap-3 text-[10px] uppercase font-bold text-slate-500 px-2 tracking-widest">
+                                        <div className="col-span-2">Tipo</div>
+                                        <div className="col-span-4">Material / Color / Espesor</div>
+                                        <div className="col-span-2 text-center">Cant.</div>
+                                        <div className="col-span-3">Notas / Medidas</div>
+                                        <div className="col-span-1"></div>
+                                    </div>
+
+                                    {materials.map((m) => (
+                                        <div key={m.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start bg-slate-900/50 p-4 md:p-2 rounded-xl border border-slate-800 relative group">
+                                            <div className="col-span-2">
+                                                <label className="md:hidden text-[10px] text-slate-500 uppercase font-bold mb-1 block tracking-wider">Tipo</label>
+                                                <select value={m.type} onChange={e => updateMaterial(m.id, 'type', e.target.value)} className="w-full bg-[#0d0d0d] border border-slate-700/80 rounded-lg p-2.5 text-slate-200 outline-none focus:border-emerald-500 transition-colors text-sm">
+                                                    <option value="Placa">Placa</option>
+                                                    <option value="Tapacanto">Tapacanto</option>
+                                                    <option value="Herraje">Herraje</option>
+                                                    <option value="Tirante">Tirante/Listón</option>
+                                                    <option value="Otro">Otro</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-span-4">
+                                                <label className="md:hidden text-[10px] text-slate-500 uppercase font-bold mb-1 block tracking-wider">Material</label>
+                                                <input placeholder="Ej: Faplac Blanco 18mm" value={m.name} onChange={e => updateMaterial(m.id, 'name', e.target.value)} className="w-full bg-[#0d0d0d] border border-slate-700/80 rounded-lg p-2.5 text-slate-200 outline-none focus:border-emerald-500 transition-colors text-sm" />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="md:hidden text-[10px] text-slate-500 uppercase font-bold mb-1 block tracking-wider">Cantidad</label>
+                                                <input type="number" min="0.5" step="0.5" value={m.qty} onChange={e => updateMaterial(m.id, 'qty', e.target.value)} className="w-full bg-[#0d0d0d] border border-slate-700/80 rounded-lg p-2.5 text-center text-emerald-400 font-mono font-bold outline-none focus:border-emerald-500 transition-colors text-sm" />
+                                            </div>
+                                            <div className="col-span-3">
+                                                <label className="md:hidden text-[10px] text-slate-500 uppercase font-bold mb-1 block tracking-wider">Notas</label>
+                                                <input placeholder="Cortes, tapacantado..." value={m.notes} onChange={e => updateMaterial(m.id, 'notes', e.target.value)} className="w-full bg-[#0d0d0d] border border-slate-700/80 rounded-lg p-2.5 text-slate-200 outline-none focus:border-emerald-500 transition-colors text-sm" />
+                                            </div>
+                                            <div className="col-span-1 flex justify-end md:justify-center items-center h-full absolute md:relative top-2 right-2 md:top-auto md:right-auto">
+                                                <button onClick={() => removeMaterial(m.id)} className="text-slate-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-colors" title="Eliminar fila">
+                                                    <Icon name="trash-2" size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {materials.length === 0 && <div className="text-center py-6 text-slate-500 text-sm border border-dashed border-slate-700 rounded-xl">Sin materiales agregados.</div>}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="shrink-0 mt-6 pt-4 border-t border-slate-800 flex justify-end gap-3">
+                            <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-300 hover:bg-white/5 transition-colors">
+                                Cancelar
+                            </button>
+                            <button onClick={generatePDF} className="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg flex items-center gap-2">
+                                <Icon name="file-text" size={16} /> Generar PDF para Taller
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const ClientManager = ({ clients, setClients, tenantId }) => {
             const [newClient, setNewClient] = useState({ name: '', phone: '', address: '', city: '' });
             const [searchTerm, setSearchTerm] = useState('');
@@ -710,6 +1016,7 @@
             const [editingClient, setEditingClient] = useState(null);
             const [editingBudget, setEditingBudget] = useState(null);
             const [paymentModal, setPaymentModal] = useState(null);
+            const [cutlistModal, setCutlistModal] = useState(null);
             const newClientNameRef = React.useRef(null);
             const toggleClient = (id) => setExpandedClients(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -1069,14 +1376,18 @@
 
                                                                 const updateBudgetStatus = async (newStatus) => {
                                                                     try {
+                                                                        const payload = { status: newStatus };
+                                                                        if (newStatus === 'instalado' && !b.installed_date) {
+                                                                            payload.installed_date = new Date().toISOString();
+                                                                        }
                                                                         const { error } = await window.supabaseClient
                                                                             .from('presupuestos')
-                                                                            .update({ status: newStatus })
+                                                                            .update(payload)
                                                                             .eq('id', b.id);
                                                                         if (error) throw error;
                                                                         const updated = clients.map(client => client.id === c.id ? {
                                                                             ...client,
-                                                                            budgets: client.budgets.map(bud => bud.id === b.id ? { ...bud, status: newStatus } : bud)
+                                                                            budgets: client.budgets.map(bud => bud.id === b.id ? { ...bud, ...payload } : bud)
                                                                         } : client);
                                                                         setClients(updated);
                                                                     } catch (error) {
@@ -1151,6 +1462,16 @@
                                                                                 <span className="text-slate-200 block text-sm leading-tight font-medium">{b.summary}</span>
                                                                             </div>
                                                                             <div className="flex gap-1.5 flex-wrap justify-end">
+                                                                                <button onClick={() => {
+                                                                                    const link = `${window.location.origin}${window.location.pathname}?view_presupuesto=${b.id}`;
+                                                                                    const text = `Hola! Aquí te comparto el enlace a tu presupuesto interactivo: ${link}`;
+                                                                                    window.open(`https://wa.me/${c.phone?.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`);
+                                                                                }} className="flex items-center gap-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1" title="Enviar enlace de presupuesto por WA">
+                                                                                    <Icon name="link" size={12} /> WA Link
+                                                                                </button>
+                                                                                <button onClick={() => setCutlistModal(b)} className="flex items-center gap-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1" title="Generar Despiece">
+                                                                                    <Icon name="scissors" size={12} /> Despiece
+                                                                                </button>
                                                                                 <button onClick={() => setEditingBudget({ ...b, client_id: c.id })} className="flex items-center gap-1.5 bg-slate-600/20 text-slate-400 hover:bg-slate-600/40 px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-colors shrink-0 mt-1" title="Editar Presupuesto">
                                                                                     <Icon name="edit" size={12} /> Editar
                                                                                 </button>
@@ -1162,9 +1483,22 @@
 
                                                                         {/* Actions: Status + Attachments */}
                                                                         <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 custom-scrollbar">
-                                                                            <button onClick={() => updateBudgetStatus('aprobado')} title="Marcar como Aprobado" className={`shrink-0 flex justify-center items-center gap-1 text-[10px] font-bold uppercase px-3 py-1.5 rounded-md border transition-colors ${b.status === 'aprobado' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><Icon name="check-circle" size={12} /> Aprobado</button>
-                                                                            <button onClick={() => updateBudgetStatus('rechazado')} title="Marcar como Rechazado" className={`shrink-0 flex justify-center items-center gap-1 text-[10px] font-bold uppercase px-3 py-1.5 rounded-md border transition-colors ${b.status === 'rechazado' ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><Icon name="x-circle" size={12} /> Rechazado</button>
-                                                                            <button onClick={() => updateBudgetStatus('terminado')} title="Marcar como Terminado" className={`shrink-0 flex justify-center items-center gap-1 text-[10px] font-bold uppercase px-3 py-1.5 rounded-md border transition-colors ${b.status === 'terminado' ? 'bg-slate-600/50 border-slate-500/50 text-slate-300' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><Icon name="package" size={12} /> Terminado</button>
+                                                                            <div className="shrink-0 flex items-center bg-slate-800/50 border border-slate-700/50 rounded-lg p-1 hover:border-blue-500/50 transition-colors">
+                                                                                <Icon name="tag" size={14} className="text-slate-400 mx-2" />
+                                                                                <select
+                                                                                    value={b.status?.toLowerCase() || 'borrador'}
+                                                                                    onChange={(e) => updateBudgetStatus(e.target.value)}
+                                                                                    className="bg-transparent text-xs font-bold uppercase tracking-wider text-slate-200 outline-none cursor-pointer p-0.5 appearance-none pr-4"
+                                                                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right center' }}
+                                                                                >
+                                                                                    <option className="bg-slate-800 text-slate-300" value="borrador">Borrador</option>
+                                                                                    <option className="bg-slate-800 text-blue-400" value="enviado">Enviado al Cliente</option>
+                                                                                    <option className="bg-slate-800 text-emerald-400" value="aprobado">Aprobado</option>
+                                                                                    <option className="bg-slate-800 text-purple-400" value="fabricando">Fabricando</option>
+                                                                                    <option className="bg-slate-800 text-orange-400" value="instalado">Instalado / Terminado</option>
+                                                                                    <option className="bg-slate-800 text-red-500" value="rechazado">Rechazado</option>
+                                                                                </select>
+                                                                            </div>
 
                                                                             <div className="shrink-0 relative">
                                                                                 <input type="file" id={`upload-receipt-${b.id}`} className="hidden" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, 'receipts')} />
@@ -1308,6 +1642,16 @@
                                     </form>
                                 </div>
                             </div>
+                        )
+                    }
+
+                    {/* Cutlist Modal */}
+                    {
+                        cutlistModal && (
+                            <CutlistCalculatorModal
+                                budget={cutlistModal}
+                                onClose={() => setCutlistModal(null)}
+                            />
                         )
                     }
 
@@ -1567,7 +1911,8 @@
                                 summary: summary,
                                 items: items,
                                 total: total,
-                                paid: 0
+                                paid: 0,
+                                origen_venta: 'Manual'
                             }
                         ])
                         .select();
@@ -3293,6 +3638,8 @@
             const [isSaving, setIsSaving] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
             const [sortOrder, setSortOrder] = useState('asc');
+            const [showMassUpdate, setShowMassUpdate] = useState(false);
+            const [massUpdateData, setMassUpdateData] = useState({ proveedor_id: '', textFilter: '', increment: '' });
 
             useEffect(() => {
                 if (!tenantId) return;
@@ -3341,6 +3688,7 @@
                     producto: '',
                     unidad_compra: '',
                     unidad_destino: '', // Added duplicated combo box value context locally
+                    rendimiento: 1,
                     cantidad: 1,
                     precio_unidad: 0,
                     precio_total: 0
@@ -3396,7 +3744,8 @@
                                 newItem.precio_total = pastItem.precio_total;
                                 // Auto-recalc unit price based on previous total? No, memory should just suggest last "P. COMPRA"
                                 const qty = Number(item.cantidad) || 0;
-                                newItem.precio_unidad = qty > 0 ? Number(pastItem.precio_total) / qty : 0;
+                                const rend = Number(item.rendimiento) || 1;
+                                newItem.precio_unidad = (qty * rend) > 0 ? Number(pastItem.precio_total) / (qty * rend) : 0;
                             }
                             return newItem;
                         }
@@ -3406,8 +3755,9 @@
                     setItems(items.map(item => {
                         if (item._localId === localId) {
                             const qty = Number(value) || 0;
+                            const rend = Number(item.rendimiento) || 1;
                             const pTotal = Number(item.precio_total) || 0;
-                            const pUnidad = qty > 0 ? pTotal / qty : 0;
+                            const pUnidad = (qty * rend) > 0 ? pTotal / (qty * rend) : 0;
                             return { ...item, cantidad: value, precio_unidad: pUnidad };
                         }
                         return item;
@@ -3418,8 +3768,20 @@
                         if (item._localId === localId) {
                             const pT = Number(value) || 0;
                             const qty = Number(item.cantidad) || 0;
-                            const newPU = qty > 0 ? pT / qty : 0;
+                            const rend = Number(item.rendimiento) || 1;
+                            const newPU = (qty * rend) > 0 ? pT / (qty * rend) : 0;
                             return { ...item, precio_total: value, precio_unidad: newPU };
+                        }
+                        return item;
+                    }));
+                } else if (field === 'rendimiento') {
+                    setItems(items.map(item => {
+                        if (item._localId === localId) {
+                            const rend = Number(value) || 1;
+                            const qty = Number(item.cantidad) || 0;
+                            const pTotal = Number(item.precio_total) || 0;
+                            const pUnidad = (qty * rend) > 0 ? pTotal / (qty * rend) : 0;
+                            return { ...item, rendimiento: value, precio_unidad: pUnidad };
                         }
                         return item;
                     }));
@@ -3463,6 +3825,8 @@
                             proveedor_id: item.proveedor_id ? parseInt(item.proveedor_id) : null,
                             producto: item.producto,
                             unidad_compra: item.unidad_compra,
+                            unidad_destino: item.unidad_destino,
+                            rendimiento: Number(item.rendimiento) || 1,
                             cantidad: Number(item.cantidad) || 1,
                             precio_unidad: Number(item.precio_unidad) || 0,
                             precio_total: Number(item.precio_total) || 0
@@ -3518,7 +3882,10 @@
                         <h2 className="text-2xl md:text-3xl font-bold text-blue-400 flex items-center gap-3">
                             <Icon name="list" size={28} /> Lista de Precios
                         </h2>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
+                            <button onClick={() => setShowMassUpdate(true)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-sm">
+                                <Icon name="trending-up" size={16} /> Monitor Inflación
+                            </button>
                             <button onClick={handleAddRow} className="bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors">
                                 <Icon name="plus" size={16} /> Agregar Producto
                             </button>
@@ -3565,7 +3932,8 @@
                                         <th className="p-3 whitespace-nowrap text-center">U</th>
                                         <th className="p-3 text-right whitespace-nowrap">CANT</th>
                                         <th className="p-3 text-right whitespace-nowrap">P. COMPRA</th>
-                                        <th className="p-3 whitespace-nowrap text-center text-blue-400">U</th>
+                                        <th className="p-3 whitespace-nowrap text-center text-blue-400" title="Rendimiento (ej: 1 Placa = 5.17 m2)">REND</th>
+                                        <th className="p-3 whitespace-nowrap text-center text-blue-400">DEST</th>
                                         <th className="p-3 text-right whitespace-nowrap text-yellow-500">P. UNITARIO</th>
                                         <th className="p-3 text-center w-20">Acciones</th>
                                     </tr>
@@ -3669,6 +4037,9 @@
                                                         <input type="number" step="0.01" min="0" value={item.precio_total} onChange={e => handleChange(item._localId, 'precio_total', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 pl-5 outline-none text-indigo-300 focus:bg-slate-800 transition-colors text-right font-mono font-bold text-xs" placeholder="0.00" />
                                                     </div>
                                                 </td>
+                                                <td className="p-2 w-20 bg-blue-900/10">
+                                                    <input type="number" step="0.01" min="0" value={item.rendimiento || 1} onChange={e => handleChange(item._localId, 'rendimiento', e.target.value)} className="w-full bg-transparent border border-transparent hover:border-slate-600 focus:border-blue-500 rounded p-1.5 outline-none text-blue-300 focus:bg-slate-800 transition-colors text-center font-mono text-xs" title="Rendimiento (ej: 1 Placa = 5.17 m2)" />
+                                                </td>
                                                 <td className="p-2 w-24 bg-blue-900/10">
                                                     <input
                                                         list={`unidad-destino-${item._localId}`}
@@ -3686,7 +4057,7 @@
                                                 <td className="p-2 w-32 bg-yellow-900/10">
                                                     <div className="relative flex items-center bg-yellow-500/10 rounded border border-yellow-500/20 px-2 py-1.5 cursor-not-allowed">
                                                         <span className="text-yellow-600/70 text-xs">$</span>
-                                                        <div className="w-full text-right font-mono font-bold text-yellow-500 text-xs truncate pl-1" title="Cálculo automático: P. Compra / Cantidad">
+                                                        <div className="w-full text-right font-mono font-bold text-yellow-500 text-xs truncate pl-1" title="Cálculo automático: P. Compra / (Cant * Rend)">
                                                             {Number(item.precio_unidad || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </div>
                                                     </div>
@@ -3716,6 +4087,80 @@
                         </p>
                         <p className="font-bold border border-slate-700/50 px-3 py-1.5 rounded-lg">Total insumos: <span className="text-blue-400">{items.length}</span></p>
                     </div>
+
+                    {/* MASS UPDATE MODAL */}
+                    {showMassUpdate && (
+                        <div className="fixed inset-0 z-[9900] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                            <div className="bg-[#1A1A1A] rounded-3xl p-6 md:p-8 max-w-md w-full border border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.15)] relative">
+                                <button onClick={() => setShowMassUpdate(false)} className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors">
+                                    <Icon name="x" size={24} />
+                                </button>
+                                <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2 text-emerald-400">
+                                    <Icon name="trending-up" className="text-emerald-400" /> Monitor Inflación
+                                </h3>
+                                <p className="text-slate-400 text-xs mb-6 text-balance">Revisá la previsualización del aumento en la tabla. Hacé clic en "Guardar Cambios" sólo si los nuevos precios son correctos.</p>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Filtrar Proveedor (Opcional)</label>
+                                        <select value={massUpdateData.proveedor_id} onChange={e => setMassUpdateData({ ...massUpdateData, proveedor_id: e.target.value })} className="w-full bg-[#0d0d0d] border border-slate-700 rounded-xl p-3 text-slate-200 outline-none focus:border-emerald-500 transition-all text-sm">
+                                            <option value="">Todos los proveedores</option>
+                                            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Filtrar Producto (Opcional)</label>
+                                        <input type="text" placeholder="Ej: PLACA (Deja vacío para todos)" value={massUpdateData.textFilter} onChange={e => setMassUpdateData({ ...massUpdateData, textFilter: e.target.value })} className="w-full bg-[#0d0d0d] border border-slate-700 rounded-xl p-3 text-slate-200 outline-none focus:border-emerald-500 transition-all text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Porcentaje de Aumento %</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">+</span>
+                                            <input type="number" step="0.1" placeholder="Ej: 15" value={massUpdateData.increment} onChange={e => setMassUpdateData({ ...massUpdateData, increment: e.target.value })} className="w-full bg-emerald-900/10 border border-emerald-500/30 rounded-xl py-3 pl-8 pr-8 text-emerald-400 font-mono font-bold outline-none focus:border-emerald-400 transition-all text-sm" />
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">%</span>
+                                        </div>
+                                    </div>
+
+                                    <button onClick={() => {
+                                        const inc = parseFloat(massUpdateData.increment);
+                                        if (isNaN(inc) || inc === 0) return window.addToast("Ingresa un porcentaje válido", "warning");
+
+                                        const provId = massUpdateData.proveedor_id ? parseInt(massUpdateData.proveedor_id) : null;
+                                        const term = massUpdateData.textFilter.toLowerCase();
+
+                                        let count = 0;
+                                        const newItems = items.map(item => {
+                                            const matchProv = !provId || parseInt(item.proveedor_id) === provId;
+                                            const matchProd = !term || (item.producto || '').toLowerCase().includes(term);
+                                            if (matchProv && matchProd) {
+                                                count++;
+                                                const originalTotal = Number(item.precio_total) || 0;
+                                                const newTotal = originalTotal * (1 + inc / 100);
+
+                                                const qty = Number(item.cantidad) || 0;
+                                                const rend = Number(item.rendimiento) || 1;
+                                                const newPU = (qty * rend) > 0 ? newTotal / (qty * rend) : 0;
+
+                                                return { ...item, precio_total: newTotal, precio_unidad: newPU };
+                                            }
+                                            return item;
+                                        });
+
+                                        if (count === 0) {
+                                            window.addToast("No se encontraron insumos con esos filtros", "warning");
+                                            return;
+                                        }
+
+                                        setItems(newItems);
+                                        setShowMassUpdate(false);
+                                        window.addToast(`Se aplicó el +${inc}% a ${count} insumo(s). Clickea "Guardar Cambios" para confirmar.`, "success");
+                                    }} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg flex justify-center items-center gap-2">
+                                        <Icon name="check" size={18} /> Aplicar Previsualización
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -3937,7 +4382,7 @@
 
         // --- Tenant Settings ---
         const TenantSettings = ({ tenantId, tenantData, setTenantData }) => {
-            const [formData, setFormData] = useState({ name: '', contact_email: '', contact_phone: '', logo_url: '' });
+            const [formData, setFormData] = useState({ name: '', contact_email: '', contact_phone: '', logo_url: '', valor_hora_hombre: '' });
             const [isSaving, setIsSaving] = useState(false);
 
             useEffect(() => {
@@ -3945,7 +4390,8 @@
                     name: tenantData.name || '',
                     contact_email: tenantData.contact_email || '',
                     contact_phone: tenantData.contact_phone || '',
-                    logo_url: tenantData.logo_url || ''
+                    logo_url: tenantData.logo_url || '',
+                    valor_hora_hombre: tenantData.valor_hora_hombre || ''
                 });
             }, [tenantData]);
 
@@ -3995,6 +4441,16 @@
                             <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">URL del Logo (Opcional)</label>
                             <input type="url" value={formData.logo_url} onChange={e => setFormData({ ...formData, logo_url: e.target.value })} placeholder="https://ejemplo.com/logo.png" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-blue-500 transition-all text-sm text-slate-200 mb-2" />
                             {formData.logo_url && <img src={formData.logo_url} alt="Logo preview" className="h-16 mt-2 rounded bg-white/10 p-1 object-contain" />}
+                        </div>
+                        <div className="pt-4 border-t border-slate-700/50">
+                            <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2"><Icon name="cpu" size={18} className="text-blue-400" /> Configuración Inteligencia Artificial</h3>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-tight">
+                                    Valor Hora Hombre ($)
+                                    <span className="text-[10px] text-blue-400/80 normal-case ml-2 font-normal" title="Utilizado por el agente de IA para calcular costos de mano de obra automáticamente en los presupuestos.">(Usado por IA)</span>
+                                </label>
+                                <input type="number" step="0.01" min="0" value={formData.valor_hora_hombre} onChange={e => setFormData({ ...formData, valor_hora_hombre: e.target.value })} className="w-full md:w-1/2 bg-slate-900/50 border border-slate-700 rounded-xl p-3 outline-none focus:border-blue-500 transition-all font-mono font-bold text-blue-400 text-sm" placeholder="Ej: 5000" />
+                            </div>
                         </div>
                         <button type="submit" disabled={isSaving} className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
                             {isSaving ? <div className="animate-spin h-5 w-5 border-2 border-white/30 border-t-white rounded-full"></div> : <Icon name="save" size={18} />} Guardar Cambios
@@ -4250,8 +4706,215 @@
             );
         };
 
+        // --- Client Proposal Portal (No Auth needed) ---
+        const ClientProposalPortal = ({ budgetId }) => {
+            const [budget, setBudget] = useState(null);
+            const [client, setClient] = useState(null);
+            const [tenant, setTenant] = useState(null);
+            const [isLoading, setIsLoading] = useState(true);
+            const [errorMsg, setErrorMsg] = useState('');
+
+            useEffect(() => {
+                const fetchBudget = async () => {
+                    try {
+                        const { data, error } = await window.supabaseClient
+                            .from('presupuestos')
+                            .select('*, tenant:tenants(*)')
+                            .eq('id', budgetId)
+                            .single();
+
+                        if (error) throw error;
+
+                        setBudget(data);
+                        setTenant(data.tenant);
+
+                        const { data: clientData } = await window.supabaseClient
+                            .from('clientes')
+                            .select('name')
+                            .eq('id', data.client_id)
+                            .single();
+
+                        if (clientData) setClient(clientData);
+
+                    } catch (err) {
+                        console.error("Error al cargar presupuesto público:", err);
+                        setErrorMsg('Presupuesto no encontrado o enlace caducado.');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+                fetchBudget();
+            }, [budgetId]);
+
+            const handleAprobar = async () => {
+                if (!(await window.confirmAsync('¿Aprobar y confirmar este presupuesto?'))) return;
+                try {
+                    const { error } = await window.supabaseClient
+                        .from('presupuestos')
+                        .update({ status: 'aprobado' })
+                        .eq('id', budgetId);
+
+                    if (error) throw error;
+
+                    setBudget({ ...budget, status: 'aprobado' });
+                    window.addToast('¡Presupuesto aprobado exitosamente!', 'success');
+                } catch (err) {
+                    window.addToast('Error al aprobar el presupuesto', 'error');
+                }
+            };
+
+            if (isLoading) {
+                return (
+                    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
+                        <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
+                        <p className="text-slate-400 font-bold tracking-widest uppercase text-sm animate-pulse">Cargando Propuesta...</p>
+                    </div>
+                );
+            }
+
+            if (errorMsg || !budget) {
+                return (
+                    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 text-center">
+                        <Icon name="file-x" size={48} className="text-red-500/50 mb-4" />
+                        <h2 className="text-2xl font-bold text-white mb-2">Presupuesto no disponible</h2>
+                        <p className="text-slate-400 max-w-sm">{errorMsg}</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-slate-900 text-slate-200 pb-20 md:pb-8">
+                    {/* Header */}
+                    <div className="bg-slate-800/80 border-b border-white/5 backdrop-blur-md sticky top-0 z-50 p-4">
+                        <div className="max-w-3xl mx-auto flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {tenant?.logo_url ? (
+                                    <img src={tenant.logo_url} alt="Logo" className="max-h-12 max-w-[140px] object-contain rounded bg-white p-1.5 shadow" />
+                                ) : (
+                                    <div className="bg-blue-600 p-2 rounded-xl shadow-lg">
+                                        <Icon name="hammer" size={24} className="text-white" />
+                                    </div>
+                                )}
+                                <div>
+                                    <h1 className="font-black text-white leading-tight">{tenant?.name || 'Amoblamientos'}</h1>
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Propuesta Comercial</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-3xl mx-auto mt-6 px-4 space-y-6">
+                        {/* Welcome */}
+                        <div className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border border-blue-500/30 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                            <div className="relative z-10 w-full flex flex-col gap-6">
+                                <div>
+                                    <h2 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">¡Hola, {client?.name?.split(' ')[0] || 'Cliente'}!</h2>
+                                    <p className="text-blue-200 md:text-lg opacity-90 leading-relaxed max-w-lg">Aquí tienes el detalle de tu presupuesto para el proyecto: <span className="font-bold text-white">{budget.summary}</span>.</p>
+                                </div>
+                                <div className="flex flex-wrap gap-3 mt-auto">
+                                    <div className="bg-black/40 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 shadow-inner">
+                                        <span className="text-slate-400 block mb-1 text-[10px] font-bold uppercase tracking-widest">Fecha de Emisión</span>
+                                        <span className="font-mono text-sm">{new Date(budget.date).toLocaleDateString('es-AR', { timeZone: 'UTC' })}</span>
+                                    </div>
+                                    <div className="bg-black/40 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 shadow-inner">
+                                        <span className="text-slate-400 block mb-1 text-[10px] font-bold uppercase tracking-widest">Estado</span>
+                                        <span className={`uppercase font-bold text-sm tracking-wider ${budget.status === 'aprobado' ? 'text-emerald-400' : 'text-blue-400'}`}>
+                                            {budget.status || 'En Revisión'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Decorative */}
+                            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-64 h-64 bg-blue-500/20 blur-3xl rounded-full pointer-events-none mix-blend-screen"></div>
+                            <div className="absolute -bottom-10 -right-10 opacity-10">
+                                <Icon name="check-circle" size={180} className="text-blue-400" />
+                            </div>
+                        </div>
+
+                        {/* Items */}
+                        <div className="bg-[#1C1C1E] border border-white/5 rounded-3xl p-6 shadow-xl relative mt-4">
+                            <h3 className="uppercase text-xs font-bold tracking-widest text-slate-500 mb-6 flex items-center gap-2">
+                                <span className="bg-slate-800 p-1.5 rounded-md"><Icon name="list" size={14} className="text-blue-400" /></span> Detalle de la Inversión
+                            </h3>
+
+                            <div className="space-y-4 mb-8">
+                                {(budget.items || []).map((item, idx) => (
+                                    <div key={idx} className="flex gap-4 items-start border-b border-slate-800/80 pb-4 last:border-0 last:pb-0 hover:bg-white/5 p-2 -mx-2 rounded-xl transition-colors">
+                                        <div className="bg-blue-500/10 text-blue-400 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 border border-blue-500/20">{item.qty}x</div>
+                                        <div className="flex-1 pt-0.5">
+                                            <p className="text-slate-200 text-sm md:text-base leading-snug">{item.desc}</p>
+                                        </div>
+                                        <div className="text-right shrink-0 pt-0.5">
+                                            <p className="text-white font-mono font-bold text-lg">${item.price.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/10 rounded-2xl p-6 md:p-8 border border-blue-500/20 flex flex-col md:flex-row justify-between items-center gap-6 shadow-4xl relative overflow-hidden">
+                                <div className="absolute left-0 top-0 w-1 h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+                                <div className="text-center md:text-left z-10">
+                                    <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">Inversión Final</p>
+                                    <p className="text-4xl md:text-5xl font-black text-white font-mono tracking-tight drop-shadow-md">${budget.total.toLocaleString()}</p>
+                                </div>
+
+                                <div className="w-full md:w-auto z-10">
+                                    {budget.status === 'aprobado' ? (
+                                        <div className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 px-8 py-4 rounded-xl font-bold flex flex-col items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                                            <Icon name="check-circle" size={24} />
+                                            <span className="tracking-wide">PRESUPUESTO APROBADO</span>
+                                        </div>
+                                    ) : (
+                                        <button onClick={handleAprobar} className="w-full relative group bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-black uppercase tracking-wider px-8 py-5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-3 overflow-hidden">
+                                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                                            <Icon name="thumbs-up" size={20} className="relative z-10" />
+                                            <span className="relative z-10">Aprobar Formato</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {(budget.plans && budget.plans.length > 0) && (
+                            <div className="bg-[#1C1C1E] border border-white/5 rounded-3xl p-6 shadow-xl mt-4">
+                                <h3 className="uppercase text-xs font-bold tracking-widest text-slate-500 mb-6 flex items-center gap-2">
+                                    <span className="bg-slate-800 p-1.5 rounded-md"><Icon name="image" size={14} className="text-purple-400" /></span> Planos y Diseños de Referencia
+                                </h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {budget.plans.map((p, idx) => (
+                                        <a key={idx} href={p.url} target="_blank" rel="noopener noreferrer" className="block group relative rounded-2xl overflow-hidden border border-slate-700 aspect-square shadow-md">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all z-10 flex flex-col items-center justify-end pb-4">
+                                                <Icon name="external-link" size={20} className="text-white mb-1 drop-shadow-md" />
+                                                <span className="text-white text-[10px] uppercase font-bold tracking-wider">Ver Original</span>
+                                            </div>
+                                            <img src={p.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Plano / Render" />
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="text-center pb-12 pt-4 opacity-50 hover:opacity-100 transition-opacity">
+                            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
+                                Desarrollado con <Icon name="heart" size={10} className="text-red-500" /> para grandes experiencias
+                            </p>
+                        </div>
+                    </div>
+                    <ToastContainer />
+                    <ConfirmDialog />
+                </div>
+            );
+        };
+
         // --- Main App ---
         const App = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewPresupuestoId = urlParams.get('view_presupuesto');
+
+            if (viewPresupuestoId) {
+                return <ClientProposalPortal budgetId={viewPresupuestoId} />;
+            }
+
             const [session, setSession] = useState(null);
             const [tenantId, setTenantId] = useState(null);
             const [tenantData, setTenantData] = useState(null);
@@ -4273,6 +4936,9 @@
                     return saved ? JSON.parse(saved) : [];
                 } catch { return []; }
             });
+            const [theme, setTheme] = useState(() => {
+                return localStorage.getItem('fabrizio_theme') || 'dark';
+            });
 
             useEffect(() => {
                 localStorage.setItem('fabrizio_clients', JSON.stringify(clients));
@@ -4281,6 +4947,15 @@
             useEffect(() => {
                 localStorage.setItem('fabrizio_suppliers', JSON.stringify(suppliers));
             }, [suppliers]);
+
+            useEffect(() => {
+                localStorage.setItem('fabrizio_theme', theme);
+                if (theme === 'light') {
+                    document.body.classList.add('light-theme');
+                } else {
+                    document.body.classList.remove('light-theme');
+                }
+            }, [theme]);
 
             // Subscripción a estado de autenticación de Supabase
             useEffect(() => {
@@ -4356,7 +5031,7 @@
 
             return (
                 <div className="flex bg-slate-900 min-h-screen relative overflow-x-hidden">
-                    <Sidebar currentTab={tab} setTab={setTab} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} userRole={userRole} />
+                    <Sidebar currentTab={tab} setTab={setTab} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} userRole={userRole} theme={theme} />
 
                     <main className={`flex-grow transition-all duration-300 min-h-screen ml-0 lg:ml-64`}>
                         {/* Persistent Header with Toggle */}
@@ -4381,9 +5056,18 @@
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 text-sm text-slate-400">
-                                <Icon name="clock" size={14} />
-                                {new Date().toLocaleDateString()}
+                            <div className="flex items-center gap-4 text-sm text-slate-400">
+                                <button
+                                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                    className="p-2 glass rounded-full hover:bg-slate-800 transition-colors flex items-center justify-center text-yellow-400"
+                                    title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                                >
+                                    <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+                                </button>
+                                <div className="hidden sm:flex items-center gap-2">
+                                    <Icon name="clock" size={14} />
+                                    {new Date().toLocaleDateString()}
+                                </div>
                             </div>
                         </div>
 
