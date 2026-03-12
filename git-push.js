@@ -33,7 +33,7 @@ try {
     let status = '';
     try {
         status = execSync('git diff --cached --name-only', { stdio: 'pipe' }).toString().trim();
-    } catch (e) {}
+    } catch (e) { }
 
     if (!status) {
         console.log('✅ No hay cambios nuevos para commitear.');
